@@ -28,7 +28,7 @@ typedef struct {
 	ovrJava java;
 	double predictedDisplayTime;
 	ovrTracking2 tracking;
-	framebuffer_t framebuffers[VRAPI_FRAME_LAYER_EYE_MAX];
+	framebuffer_t framebuffers;//[VRAPI_FRAME_LAYER_EYE_MAX];
 } engine_t;
 
 typedef enum {

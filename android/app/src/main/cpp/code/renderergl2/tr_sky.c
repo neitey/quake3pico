@@ -438,8 +438,9 @@ static void DrawSkySide( struct image_s *image, const int mins[2], const int max
 		vec4_t vector;
 
 		GLSL_BindProgram(sp);
-		
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
+		//GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 		
 		color[0] = 
 		color[1] = 
@@ -796,14 +797,14 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 		return;
 	}
 
-	//qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
+	//qglLoadMatrixf( backEnd.viewParms.world.eyeViewMatrix[2] );
 	//qglTranslatef (backEnd.viewParms.or.origin[0], backEnd.viewParms.or.origin[1], backEnd.viewParms.or.origin[2]);
 	{
 		// FIXME: this could be a lot cleaner
 		mat4_t translation, modelview;
 
 		Mat4Translation( backEnd.viewParms.or.origin, translation );
-		Mat4Multiply( backEnd.viewParms.world.modelMatrix, translation, modelview );
+		Mat4Multiply( backEnd.viewParms.world.eyeViewMatrix[2], translation, modelview );
 		GL_SetModelviewMatrix( modelview, qtrue );
 	}
 

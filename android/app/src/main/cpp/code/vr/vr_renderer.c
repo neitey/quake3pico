@@ -8,7 +8,11 @@
 
 #include "vr_clientinfo.h"
 #include "vr_types.h"
-//#include "../SDL2/include/SDL_opengles2_gl2.h"
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wstrict-prototypes"
@@ -81,18 +85,31 @@ void VR_GetResolution(engine_t* engine, int *pWidth, int *pHeight)
 	}
 }
 
+typedef void(GL_APIENTRY* PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC)(
+GLenum target,
+        GLenum attachment,
+GLuint texture,
+        GLint level,
+GLint baseViewIndex,
+        GLsizei numViews);
+
 void VR_InitRenderer( engine_t* engine ) {
 #if ENABLE_GL_DEBUG
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(VR_GLDebugLog, 0);
 #endif
 
+    PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC glFramebufferTextureMultiviewOVR =
+            (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC)eglGetProcAddress(
+                    "glFramebufferTextureMultiviewOVR");
+
 	int eyeW, eyeH;
     VR_GetResolution(engine, &eyeW, &eyeH);
 	
-	for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; ++eye) {
-		framebuffer_t* framebuffer = &engine->framebuffers[eye];
-		framebuffer->colorTexture = vrapi_CreateTextureSwapChain3(VRAPI_TEXTURE_TYPE_2D, GL_RGBA8,
+	//for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; ++eye) 
+	{
+		framebuffer_t* framebuffer = &engine->framebuffers;
+		framebuffer->colorTexture = vrapi_CreateTextureSwapChain3(VRAPI_TEXTURE_TYPE_2D_ARRAY, GL_RGBA8,
 			eyeW, eyeH, 1, 3);
 		framebuffer->swapchainLength = vrapi_GetTextureSwapChainLength(framebuffer->colorTexture);
 		framebuffer->depthBuffers = (GLuint*)malloc(framebuffer->swapchainLength * sizeof(GLuint));
@@ -103,21 +120,26 @@ void VR_InitRenderer( engine_t* engine ) {
 			GLenum framebufferStatus;
 
 			colorTexture = vrapi_GetTextureSwapChainHandle(framebuffer->colorTexture, index);
-			glBindTexture(GL_TEXTURE_2D, colorTexture);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glBindTexture(GL_TEXTURE_2D, 0);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, colorTexture);
+            GLfloat borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
+            glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor);
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
-			glGenRenderbuffers(1, &framebuffer->depthBuffers[index]);
-			glBindRenderbuffer(GL_RENDERBUFFER, framebuffer->depthBuffers[index]);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, eyeW, eyeH);
-			glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glGenTextures(1, &framebuffer->depthBuffers[index]);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, framebuffer->depthBuffers[index]);
+            glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_DEPTH_COMPONENT24, eyeW, eyeH, 2);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
 			glGenFramebuffers(1, &framebuffer->framebuffers[index]);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer->framebuffers[index]);
-			glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
-				framebuffer->depthBuffers[index]);
-			glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
+
+            glFramebufferTextureMultiviewOVR(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+				framebuffer->depthBuffers[index], 0, 0, 2);
+            glFramebufferTextureMultiviewOVR(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                             colorTexture, 0, 0, 2);
+
 			framebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
 			assert(framebufferStatus == GL_FRAMEBUFFER_COMPLETE);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -128,15 +150,15 @@ void VR_InitRenderer( engine_t* engine ) {
 void VR_DestroyRenderer( engine_t* engine ) {
 	for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; ++eye)
 	{
-		if (engine->framebuffers[eye].swapchainLength > 0) {
-			glDeleteFramebuffers(engine->framebuffers[eye].swapchainLength,
-				engine->framebuffers[eye].depthBuffers);
-			free(engine->framebuffers[eye].depthBuffers);
-			free(engine->framebuffers[eye].framebuffers);
+		if (engine->framebuffers.swapchainLength > 0) {
+			glDeleteFramebuffers(engine->framebuffers.swapchainLength,
+				engine->framebuffers.depthBuffers);
+			free(engine->framebuffers.depthBuffers);
+			free(engine->framebuffers.framebuffers);
 
-			vrapi_DestroyTextureSwapChain(engine->framebuffers[eye].colorTexture);
+			vrapi_DestroyTextureSwapChain(engine->framebuffers.colorTexture);
 
-			memset(&engine->framebuffers[eye], 0, sizeof(engine->framebuffers[eye]));
+			memset(&engine->framebuffers, 0, sizeof(engine->framebuffers));
 		}
 	}
 
@@ -207,8 +229,8 @@ ovrLayerCylinder2 BuildCylinderLayer(engine_t* engine, const int textureWidth, c
 	{
 		ovrMatrix4f modelViewMatrix = ovrMatrix4f_Multiply( &tracking->Eye[eye].ViewMatrix, &cylinderTransform );
 		layer.Textures[eye].TexCoordsFromTanAngles = ovrMatrix4f_Inverse( &modelViewMatrix );
-		layer.Textures[eye].ColorSwapChain = engine->framebuffers[eye].colorTexture;
-		layer.Textures[eye].SwapChainIndex = engine->framebuffers[eye].swapchainIndex;
+		layer.Textures[eye].ColorSwapChain = engine->framebuffers.colorTexture;
+		layer.Textures[eye].SwapChainIndex = engine->framebuffers.swapchainIndex;
 
 		// Texcoord scale and bias is just a representation of the aspect ratio. The positioning
 		// of the cylinder is handled entirely by the TexCoordsFromTanAngles matrix.
@@ -312,17 +334,14 @@ void VR_DrawFrame( engine_t* engine ) {
 		frameDesc.LayerCount = 1;
 		frameDesc.Layers = layers;
 
-		const framebuffer_t* framebuffers = engine->framebuffers;
-
         re.SetVRHeadsetParms(&projectionMatrix,
-			framebuffers[0].framebuffers[framebuffers[0].swapchainIndex],
-			framebuffers[1].framebuffers[framebuffers[1].swapchainIndex]);
+                             engine->framebuffers.framebuffers[engine->framebuffers.swapchainIndex]);
 
 		Com_Frame();
 
 		for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; ++eye) {
-			engine->framebuffers[eye].swapchainIndex = (engine->framebuffers[eye].swapchainIndex + 1) %
-				engine->framebuffers[eye].swapchainLength;
+			engine->framebuffers.swapchainIndex = (engine->framebuffers.swapchainIndex + 1) %
+				engine->framebuffers.swapchainLength;
 		}
 
 		// Hand over the eye images to the time warp.
@@ -340,26 +359,21 @@ void VR_DrawFrame( engine_t* engine ) {
 
 
         for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; ++eye) {
-			layer.Textures[eye].ColorSwapChain = engine->framebuffers[eye].colorTexture;
-			layer.Textures[eye].SwapChainIndex = engine->framebuffers[eye].swapchainIndex;
+			layer.Textures[eye].ColorSwapChain = engine->framebuffers.colorTexture;
+			layer.Textures[eye].SwapChainIndex = engine->framebuffers.swapchainIndex;
 			layer.Textures[eye].TexCoordsFromTanAngles = ovrMatrix4f_TanAngleMatrixFromProjection(&defaultProjection);
 		}
 
-
-		const framebuffer_t* framebuffers = engine->framebuffers;
-
-        VR_ClearFrameBuffer(framebuffers[0].framebuffers[framebuffers[0].swapchainIndex], eyeW, eyeH);
-        VR_ClearFrameBuffer(framebuffers[1].framebuffers[framebuffers[1].swapchainIndex], eyeW, eyeH);
+        VR_ClearFrameBuffer(engine->framebuffers.framebuffers[engine->framebuffers.swapchainIndex], eyeW, eyeH);
 
 		re.SetVRHeadsetParms(&projectionMatrix,
-			framebuffers[0].framebuffers[framebuffers[0].swapchainIndex],
-			framebuffers[1].framebuffers[framebuffers[1].swapchainIndex]);
+							 engine->framebuffers.framebuffers[engine->framebuffers.swapchainIndex]);
 
 		Com_Frame();
 
 		for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; ++eye) {
-			engine->framebuffers[eye].swapchainIndex = (engine->framebuffers[eye].swapchainIndex + 1) %
-				engine->framebuffers[eye].swapchainLength;
+			engine->framebuffers.swapchainIndex = (engine->framebuffers.swapchainIndex + 1) %
+				engine->framebuffers.swapchainLength;
 		}
 
 		const ovrLayerHeader2* layers[] = {

@@ -41,13 +41,20 @@ uniform vec4   u_DiffuseTexMatrix;
 uniform vec4   u_DiffuseTexOffTurb;
 #endif
 
-uniform mat4   u_ModelViewProjectionMatrix;
+
+// Uniforms
+layout(shared) uniform ViewMatrices
+		{
+				uniform highp mat4 u_ViewMatrices[NUM_VIEWS];
+		};
+layout(shared) uniform ProjectionMatrix
+		{
+				uniform highp mat4 u_ProjectionMatrix;
+		};
+uniform highp mat4 u_ModelMatrix;
+
 uniform vec4   u_BaseColor;
 uniform vec4   u_VertColor;
-
-#if defined(USE_MODELMATRIX)
-uniform mat4   u_ModelMatrix;
-#endif
 
 #if defined(USE_VERTEX_ANIMATION)
 uniform float  u_VertexLerp;
@@ -188,7 +195,7 @@ void main()
 	var_TexCoords.xy = texCoords;
 #endif
 
-	gl_Position = u_ModelViewProjectionMatrix * vec4(position, 1.0);
+	gl_Position = u_ProjectionMatrix * (u_ViewMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0)));
 
 #if defined(USE_MODELMATRIX)
 	position  = (u_ModelMatrix * vec4(position, 1.0)).xyz;

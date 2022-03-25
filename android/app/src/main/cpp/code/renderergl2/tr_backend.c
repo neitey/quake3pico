@@ -546,7 +546,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
-			GL_SetModelviewMatrix( backEnd.or.modelMatrix, qtrue );
+			GL_SetModelviewMatrix( backEnd.or.eyeViewMatrix[2], qtrue );
 
 			//
 			// change depthrange. Also change projection matrix so first person weapon does not look like coming
@@ -556,24 +556,21 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			{
 				if (depthRange)
 				{
-					if(backEnd.viewParms.stereoFrame != STEREO_CENTER)
+					if(isCrosshair)
 					{
-						if(isCrosshair)
+						if(oldDepthRange)
 						{
-							if(oldDepthRange)
-							{
-								// was not a crosshair but now is, change back proj matrix
-								GL_SetProjectionMatrix( backEnd.viewParms.projectionMatrix );
-							}
+							// was not a crosshair but now is, change back proj matrix
+							GL_SetProjectionMatrix( backEnd.viewParms.projectionMatrix );
 						}
-						else
-						{
-							viewParms_t temp = backEnd.viewParms;
+					}
+					else
+					{
+						viewParms_t temp = backEnd.viewParms;
 
-							R_SetupProjection(&temp, r_znear->value, 0, qfalse);
+						R_SetupProjection(&temp, r_znear->value, 0, qfalse);
 
-							GL_SetProjectionMatrix( temp.projectionMatrix );
-						}
+						GL_SetProjectionMatrix( temp.projectionMatrix );
 					}
 
 #ifdef __ANDROID__
@@ -586,7 +583,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				}
 				else
 				{
-					if(!wasCrosshair && backEnd.viewParms.stereoFrame != STEREO_CENTER)
+					if(!wasCrosshair)
 					{
 						GL_SetProjectionMatrix( backEnd.viewParms.projectionMatrix );
 					}
@@ -621,7 +618,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 	// go back to the world modelview matrix
 
-	GL_SetModelviewMatrix( backEnd.viewParms.world.modelMatrix, qtrue );
+	GL_SetModelviewMatrix( backEnd.viewParms.world.eyeViewMatrix[2], qtrue );
 
 #ifdef __ANDROID__
 	glDepthRangef(0, 1);
@@ -756,7 +753,8 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 
 	GLSL_BindProgram(&tr.textureColorShader);
 	
-	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+	//GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
 	GLSL_SetUniformVec4(&tr.textureColorShader, UNIFORM_COLOR, colorWhite);
 
 	RB_InstantQuad2(quadVerts, texCoords);

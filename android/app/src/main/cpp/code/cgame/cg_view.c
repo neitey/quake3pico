@@ -745,7 +745,7 @@ static int CG_CalcViewValues( ) {
         VectorCopy(cg.refdef.vieworg, cg.vr_vieworigin);
     }
 
-    if (!cgs.localServer && cg.stereoView == STEREO_LEFT)
+    if (!cgs.localServer)// && cg.stereoView == STEREO_LEFT)
     {
         vec3_t weaponorigin, weaponangles;
         CG_CalculateVRWeaponPosition(weaponorigin, weaponangles);
@@ -998,7 +998,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// this counter will be bumped for every valid scene we generate
 	cg.clientFrame++;
 
-	if (cg.stereoView == STEREO_LEFT)
+	//if (cg.stereoView == STEREO_LEFT)
 	{
 		// update cg.predictedPlayerState - only do this on the first eye render
 		CG_PredictPlayerState();

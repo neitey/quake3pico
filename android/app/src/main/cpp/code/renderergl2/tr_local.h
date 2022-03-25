@@ -107,7 +107,12 @@ typedef struct {
 	vec3_t		origin;			// in world coordinates
 	vec3_t		axis[3];		// orientation in world
 	vec3_t		viewOrigin;		// viewParms->or.origin in local coordinates
-	float		modelMatrix[16];
+//	float		eyeViewMatrix[2][16];
+	union {
+		float eyeViewMatrix[3][16];
+		float viewMatrix[48];
+	};
+
 	float		transformMatrix[16];
 } orientationr_t;
 
@@ -671,7 +676,6 @@ typedef enum
 	UNIFORM_FOGCOLORMASK,
 
 	UNIFORM_MODELMATRIX,
-	UNIFORM_MODELVIEWPROJECTIONMATRIX,
 
 	UNIFORM_TIME,
 	UNIFORM_VERTEXLERP,
@@ -713,6 +717,10 @@ typedef struct shaderProgram_s
 	GLuint          vertexShader;
 	GLuint          fragmentShader;
 	uint32_t        attribs;	// vertex array attributes
+
+	//New for multiview - The view and projection matrix uniforms
+	GLuint		projectionMatrixBinding;
+	GLuint		viewMatricesBinding;
 
 	// uniform parameters
 	GLint uniforms[UNIFORM_COUNT];
@@ -836,14 +844,12 @@ typedef struct {
 	vec3_t		visBounds[2];
 	float		zFar;
 	float       zNear;
-	stereoFrame_t	stereoFrame;
 } viewParms_t;
 
 typedef struct {
 	qboolean	valid;
 	float		projection[16];
-	int			renderBufferL;
-	int			renderBufferR;
+	int			renderBuffer;
 	int			renderBufferOriginal;
 } vrParms_t;
 
@@ -2234,6 +2240,7 @@ GLSL
 */
 
 void GLSL_InitGPUShaders(void);
+void GLSL_PrepareShaders(void);
 void GLSL_ShutdownGPUShaders(void);
 void GLSL_VertexAttribPointers(uint32_t attribBits);
 void GLSL_BindProgram(shaderProgram_t * program);
@@ -2309,7 +2316,7 @@ int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
 =============================================================
 =============================================================
 */
-void	R_TransformModelToClip( const vec3_t src, const float *modelMatrix, const float *projectionMatrix,
+void	R_TransformModelToClip( const vec3_t src, const float *viewMatrix, const float *projectionMatrix,
 							vec4_t eye, vec4_t dst );
 void	R_TransformClipToWindow( const vec4_t clip, const viewParms_t *view, vec4_t normalized, vec4_t window );
 
@@ -2508,7 +2515,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame );
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec );
 #if __ANDROID__
 void RE_SetVRHeadsetParms( const ovrMatrix4f *projectionMatrix,
-        int renderBufferL, int renderBufferR );
+        int renderBuffer );
 #endif
 void RE_SaveJPG(char * filename, int quality, int image_width, int image_height,
                 unsigned char *image_buffer, int padding);

@@ -415,7 +415,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 			tr.vrParms.renderBufferOriginal = tr.renderFbo->frameBuffer;
 		}
 
-		if ( stereoFrame == STEREO_LEFT ) {
+/*		if ( stereoFrame == STEREO_LEFT ) {
 			if (tr.vrParms.valid == qtrue) {
 				if (tr.renderFbo) {
 					switchEyeCommand_t* sec;
@@ -440,6 +440,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		} else {
 			ri.Error( ERR_FATAL, "RE_BeginFrame: Stereo is enabled, but stereoFrame was %i", stereoFrame );
 		}
+		*/
 	}
 	else
 	{
@@ -537,6 +538,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	}
 	
 	tr.refdef.stereoFrame = stereoFrame;
+
+	GLSL_PrepareShaders();
 }
 
 
@@ -591,10 +594,9 @@ void R_Mat4Transpose( const float in[4][4], float* out ) {
 
 
 void RE_SetVRHeadsetParms( const ovrMatrix4f *projectionMatrix,
-        int renderBufferL, int renderBufferR ) {
+        int renderBuffer ) {
 	R_Mat4Transpose(projectionMatrix->M, tr.vrParms.projection);
-	tr.vrParms.renderBufferL = renderBufferL;
-	tr.vrParms.renderBufferR = renderBufferR;
+	tr.vrParms.renderBuffer = renderBuffer;
 	tr.vrParms.valid = qtrue;
 }
 //#endif

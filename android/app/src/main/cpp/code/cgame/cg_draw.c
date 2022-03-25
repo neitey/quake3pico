@@ -2809,7 +2809,7 @@ void CG_DrawActive( void ) {
 
 
 	float ipd = trap_Cvar_VariableValue("r_stereoSeparation") / 1000.0f;
-	float separation = worldscale * (ipd / 2) * (cg.stereoView == STEREO_LEFT ? -1.0f : 1.0f);
+	float separation = 0.0F;//worldscale * (ipd / 2) * (cg.stereoView == STEREO_LEFT ? -1.0f : 1.0f);
 
 	if (cg.snap->ps.pm_flags & PMF_FOLLOW && vr->follow_mode == VRFM_FIRSTPERSON)
     {

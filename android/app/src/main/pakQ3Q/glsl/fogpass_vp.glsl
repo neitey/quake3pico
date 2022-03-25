@@ -21,7 +21,17 @@ uniform float   u_DeformParams[5];
 #endif
 
 uniform float   u_Time;
-uniform mat4    u_ModelViewProjectionMatrix;
+
+// Uniforms
+layout(shared) uniform ViewMatrices
+		{
+				uniform highp mat4 u_ViewMatrices[NUM_VIEWS];
+		};
+layout(shared) uniform ProjectionMatrix
+		{
+				uniform highp mat4 u_ProjectionMatrix;
+		};
+uniform highp mat4 u_ModelMatrix;
 
 #if defined(USE_VERTEX_ANIMATION)
 uniform float   u_VertexLerp;
@@ -125,7 +135,7 @@ void main()
 	position.xyz = DeformPosition(position.xyz, normal, attr_TexCoord0.st);
 #endif
 
-	gl_Position = u_ModelViewProjectionMatrix * vec4(position, 1.0);
+	gl_Position = u_ProjectionMatrix * (u_ViewMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0)));
 
 	var_Scale = CalcFog(position) * u_Color.a * u_Color.a;
 }

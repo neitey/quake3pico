@@ -533,7 +533,7 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms,
 	glMatrix[15] = 1;
 
 	Mat4Copy(glMatrix, or->transformMatrix);
-	myGlMultMatrix( glMatrix, viewParms->world.modelMatrix, or->modelMatrix );
+	myGlMultMatrix( glMatrix, viewParms->world.eyeViewMatrix[2], or->eyeViewMatrix[2] );
 
 	// calculate the viewer origin in the model's space
 	// needed for fog, specular, and environment mapping
@@ -566,7 +566,6 @@ Sets up the modelview matrix for a given viewParm
 void R_RotateForViewer (void) 
 {
 	float	viewerMatrix[16];
-	vec3_t	origin;
 
 	Com_Memset (&tr.or, 0, sizeof(tr.or));
 	tr.or.axis[0][0] = 1;
@@ -574,35 +573,47 @@ void R_RotateForViewer (void)
 	tr.or.axis[2][2] = 1;
 	VectorCopy (tr.viewParms.or.origin, tr.or.viewOrigin);
 
-	// transform by the camera placement
-	VectorCopy( tr.viewParms.or.origin, origin );
+	for (int eye = 0; eye <= 2; ++eye)
+	{
+		// transform by the camera placement
+		vec3_t	origin;
+		VectorCopy(tr.viewParms.or.origin, origin);
 
-	viewerMatrix[0] = tr.viewParms.or.axis[0][0];
-	viewerMatrix[4] = tr.viewParms.or.axis[0][1];
-	viewerMatrix[8] = tr.viewParms.or.axis[0][2];
-	viewerMatrix[12] = -origin[0] * viewerMatrix[0] + -origin[1] * viewerMatrix[4] + -origin[2] * viewerMatrix[8];
+		if (eye < 2)
+		{
+			float scale = ((r_stereoSeparation->value / 1000.0f) / 2.0f) * (32.0f);
+			VectorMA(origin, (eye == 0 ? 1.0f : -1.0f) * 100.0f, tr.viewParms.or.axis[1], origin);
+		}
 
-	viewerMatrix[1] = tr.viewParms.or.axis[1][0];
-	viewerMatrix[5] = tr.viewParms.or.axis[1][1];
-	viewerMatrix[9] = tr.viewParms.or.axis[1][2];
-	viewerMatrix[13] = -origin[0] * viewerMatrix[1] + -origin[1] * viewerMatrix[5] + -origin[2] * viewerMatrix[9];
+		viewerMatrix[0] = tr.viewParms.or.axis[0][0];
+		viewerMatrix[4] = tr.viewParms.or.axis[0][1];
+		viewerMatrix[8] = tr.viewParms.or.axis[0][2];
+		viewerMatrix[12] = -origin[0] * viewerMatrix[0] + -origin[1] * viewerMatrix[4] +
+						   -origin[2] * viewerMatrix[8];
 
-	viewerMatrix[2] = tr.viewParms.or.axis[2][0];
-	viewerMatrix[6] = tr.viewParms.or.axis[2][1];
-	viewerMatrix[10] = tr.viewParms.or.axis[2][2];
-	viewerMatrix[14] = -origin[0] * viewerMatrix[2] + -origin[1] * viewerMatrix[6] + -origin[2] * viewerMatrix[10];
+		viewerMatrix[1] = tr.viewParms.or.axis[1][0];
+		viewerMatrix[5] = tr.viewParms.or.axis[1][1];
+		viewerMatrix[9] = tr.viewParms.or.axis[1][2];
+		viewerMatrix[13] = -origin[0] * viewerMatrix[1] + -origin[1] * viewerMatrix[5] +
+						   -origin[2] * viewerMatrix[9];
 
-	viewerMatrix[3] = 0;
-	viewerMatrix[7] = 0;
-	viewerMatrix[11] = 0;
-	viewerMatrix[15] = 1;
+		viewerMatrix[2] = tr.viewParms.or.axis[2][0];
+		viewerMatrix[6] = tr.viewParms.or.axis[2][1];
+		viewerMatrix[10] = tr.viewParms.or.axis[2][2];
+		viewerMatrix[14] = -origin[0] * viewerMatrix[2] + -origin[1] * viewerMatrix[6] +
+						   -origin[2] * viewerMatrix[10];
 
-	// convert from our coordinate system (looking down X)
-	// to OpenGL's coordinate system (looking down -Z)
-	myGlMultMatrix( viewerMatrix, s_flipMatrix, tr.or.modelMatrix );
+		viewerMatrix[3] = 0;
+		viewerMatrix[7] = 0;
+		viewerMatrix[11] = 0;
+		viewerMatrix[15] = 1;
+
+		// convert from our coordinate system (looking down X)
+		// to OpenGL's coordinate system (looking down -Z)
+		myGlMultMatrix(viewerMatrix, s_flipMatrix, tr.or.eyeViewMatrix[eye]);
+	}
 
 	tr.viewParms.world = tr.or;
-
 }
 
 /*
@@ -727,45 +738,8 @@ void R_SetupProjection(viewParms_t *dest, float zProj, float zFar, qboolean comp
 	width = xmax - xmin;
 	height = ymax - ymin;
 
-	if (tr.vrParms.valid) {
-/*		if (dest->stereoFrame == STEREO_LEFT) {
-			memcpy(&dest->projectionMatrix, &tr.vrParms.projectionL, sizeof(dest->projectionMatrix));
-		}
-		else */
-		{
-			memcpy(&dest->projectionMatrix, &tr.vrParms.projection, sizeof(dest->projectionMatrix));
-		}
-	} else {
-		/*
-		 * offset the view origin of the viewer for stereo rendering 
-		 * by setting the projection matrix appropriately.
-		 */
-		if(stereoSep != 0)
-		{
-			if(dest->stereoFrame == STEREO_LEFT)
-				stereoSep = zProj / stereoSep;
-			else if(dest->stereoFrame == STEREO_RIGHT)
-				stereoSep = zProj / -stereoSep;
-			else
-				stereoSep = 0;
-		}
+	memcpy(&dest->projectionMatrix, &tr.vrParms.projection, sizeof(dest->projectionMatrix));
 
-		dest->projectionMatrix[0] = 2 * zProj / width;
-		dest->projectionMatrix[4] = 0;
-		dest->projectionMatrix[8] = (xmax + xmin + 2 * stereoSep) / width;
-		dest->projectionMatrix[12] = 2 * zProj * stereoSep / width;
-
-		dest->projectionMatrix[1] = 0;
-		dest->projectionMatrix[5] = 2 * zProj / height;
-		dest->projectionMatrix[9] = ( ymax + ymin ) / height;	// normally 0
-		dest->projectionMatrix[13] = 0;
-
-		dest->projectionMatrix[3] = 0;
-		dest->projectionMatrix[7] = 0;
-		dest->projectionMatrix[11] = -1;
-		dest->projectionMatrix[15] = 0;
-	}
-	
 	// Now that we have all the data for the projection matrix we can also setup the view frustum.
 	if(computeFrustum)
 		R_SetupFrustum( );//dest, xmin, xmax, ymax, zProj, zFar, stereoSep);
@@ -1196,7 +1170,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 		int j;
 		unsigned int pointFlags = 0;
 
-		R_TransformModelToClip( tess.xyz[i], tr.or.modelMatrix, tr.viewParms.projectionMatrix, eye, clip );
+		R_TransformModelToClip( tess.xyz[i], tr.or.eyeViewMatrix[2], tr.viewParms.projectionMatrix, eye, clip );
 
 		for ( j = 0; j < 3; j++ )
 		{
@@ -1735,6 +1709,8 @@ void R_RenderView (viewParms_t *parms) {
 	R_RotateForViewer ();
 
 	R_SetupProjection(&tr.viewParms, r_zproj->value, tr.viewParms.zFar, qtrue);
+
+	GLSL_PrepareShaders();
 
 	R_GenerateDrawSurfs();
 
@@ -2519,7 +2495,7 @@ void R_RenderSunShadowMaps(const refdef_t *fd, int level)
 			R_SortDrawSurfs( tr.refdef.drawSurfs + firstDrawSurf, tr.refdef.numDrawSurfs - firstDrawSurf );
 		}
 
-		Mat4Multiply(tr.viewParms.projectionMatrix, tr.viewParms.world.modelMatrix, tr.refdef.sunShadowMvp[level]);
+		Mat4Multiply(tr.viewParms.projectionMatrix, tr.viewParms.world.eyeViewMatrix[2], tr.refdef.sunShadowMvp[level]);
 	}
 }
 

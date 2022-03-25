@@ -91,7 +91,7 @@ typedef struct {
 
 #if __ANDROID__
 	void	(*SetVRHeadsetParms)( const ovrMatrix4f *projectionMatrix,
-			int renderBufferL, int renderBufferR );
+			int renderBuffer );
 #endif
 
 	int		(*MarkFragments)( int numPoints, const vec3_t *points, const vec3_t projection,

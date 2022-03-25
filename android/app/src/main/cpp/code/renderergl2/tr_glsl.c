@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "tr_dsa.h"
 
+
 extern const char *fallbackShader_bokeh_vp;
 extern const char *fallbackShader_bokeh_fp;
 extern const char *fallbackShader_calclevels4x_vp;
@@ -59,6 +60,13 @@ typedef struct uniformInfo_s
 	int type;
 }
 uniformInfo_t;
+
+#define ORTHO_PROJECTION			0
+#define NORMAL_PROJECTION			1
+
+GLuint		viewMatricesBuffer;
+GLuint		projectionMatricesBuffer[2];
+
 
 // These must be in the same order as in uniform_t in tr_local.h.
 static uniformInfo_t uniformsInfo[] =
@@ -122,7 +130,6 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_FogColorMask", GLSL_VEC4 },
 
 	{ "u_ModelMatrix",               GLSL_MAT16 },
-	{ "u_ModelViewProjectionMatrix", GLSL_MAT16 },
 
 	{ "u_Time",          GLSL_FLOAT },
 	{ "u_VertexLerp" ,   GLSL_FLOAT },
@@ -159,6 +166,61 @@ typedef enum
 	GLSL_PRINTLOG_SHADER_SOURCE
 }
 glslPrintLog_t;
+
+
+/*
+====================
+GLSL_ViewMatricesUniformBuffer
+====================
+*/
+static void GLSL_ViewMatricesUniformBuffer(const float value[32]) {
+
+	// Update the scene matrices.
+	qglBindBuffer(GL_UNIFORM_BUFFER, viewMatricesBuffer);
+	float* viewMatrices = (float*)qglMapBufferRange(
+			GL_UNIFORM_BUFFER,
+			0,
+			2 * 16 * sizeof(float),
+			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+
+	if (viewMatrices == NULL)
+	{
+		ri.Error(ERR_DROP, "View Matrices Uniform Buffer is NULL");
+		return;
+	}
+
+	memcpy((char*)viewMatrices, value, 32 * sizeof(float));
+
+	qglUnmapBuffer(GL_UNIFORM_BUFFER);
+	qglBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+/*
+====================
+GLSL_ProjectionMatricesUniformBuffer
+====================
+*/
+static void GLSL_ProjectionMatricesUniformBuffer(GLint projectionMatricesBuffer, const float value[16]) {
+
+	// Update the scene matrices.
+	qglBindBuffer(GL_UNIFORM_BUFFER, projectionMatricesBuffer);
+	float* projectionMatrix = (float*)qglMapBufferRange(
+			GL_UNIFORM_BUFFER,
+			0,
+			16 * sizeof(float),
+			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+
+	if (projectionMatrix == NULL)
+	{
+		ri.Error(ERR_DROP, "Projection Matrices Uniform Buffer is NULL");
+		return;
+	}
+
+	memcpy((char*)projectionMatrix, value, 16 * sizeof(float));
+
+	qglUnmapBuffer(GL_UNIFORM_BUFFER);
+	qglBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
 
 static void GLSL_PrintLog(GLuint programOrShader, glslPrintLog_t type, qboolean developerOnly)
 {
@@ -243,6 +305,11 @@ static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *
 	// HACK: abuse the GLSL preprocessor to turn GLSL 1.20 shaders into 1.30 ones
 #ifdef __ANDROID__
 	Q_strcat(dest, size, "#version 300 es\n");
+
+	//Enable multiview
+	Q_strcat(dest, size, "#define NUM_VIEWS 2\n");
+	Q_strcat(dest, size, "#extension GL_OVR_multiview2 : enable\n");
+	Q_strcat(dest, size, "layout(num_views=NUM_VIEWS) in;\n");
 
 	// HACK: use in main menu medium float precision (to prevent issue with missing models textures)
 	if (Cvar_Get("r_uiFullScreen", "1", 0)->integer)
@@ -661,6 +728,23 @@ void GLSL_InitUniforms(shaderProgram_t *program)
 
 	GLint *uniforms = program->uniforms;
 
+	//Shader Matrices for the View Matrices
+	GLuint viewMatricesUniformLocation = qglGetUniformBlockIndex(program->program, "ViewMatrices");
+	int numBufferBindings = 0;
+	program->viewMatricesBinding = numBufferBindings++;
+	qglUniformBlockBinding(
+			program->program,
+			viewMatricesUniformLocation,
+			program->viewMatricesBinding);
+
+	//Shader Matrices for the Projection Matrix
+	GLuint projectionMatrixUniformLocation = qglGetUniformBlockIndex(program->program, "ProjectionMatrix");
+	program->projectionMatrixBinding = numBufferBindings++;
+	qglUniformBlockBinding(
+			program->program,
+			projectionMatrixUniformLocation,
+			program->projectionMatrixBinding);
+
 	size = 0;
 	for (i = 0; i < UNIFORM_COUNT; i++)
 	{
@@ -948,6 +1032,28 @@ void GLSL_InitGPUShaders(void)
 	int numGenShaders = 0, numLightShaders = 0, numEtcShaders = 0;
 
 	ri.Printf(PRINT_ALL, "------- GLSL_InitGPUShaders -------\n");
+
+	//Generate buffer for 2 * view matrices
+	qglGenBuffers(1, &viewMatricesBuffer);
+	qglBindBuffer(GL_UNIFORM_BUFFER, viewMatricesBuffer);
+	qglBufferData(
+			GL_UNIFORM_BUFFER,
+			2 * 16 * sizeof(float),
+			NULL,
+			GL_STATIC_DRAW);
+	qglBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	for (int i = 0; i < 2; ++i)
+	{
+		qglGenBuffers(1, &projectionMatricesBuffer[i]);
+		qglBindBuffer(GL_UNIFORM_BUFFER, projectionMatricesBuffer[i]);
+		qglBufferData(
+				GL_UNIFORM_BUFFER,
+				16 * sizeof(float),
+				NULL,
+				GL_STATIC_DRAW);
+		qglBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
 
 	R_IssuePendingRenderCommands();
 
@@ -1517,6 +1623,51 @@ void GLSL_ShutdownGPUShaders(void)
 		GLSL_DeleteGPUShader(&tr.depthBlurShader[i]);
 }
 
+void GLSL_PrepareShaders(void)
+{
+	static qboolean first = qtrue;
+	static float defaultProjection[16];
+	if (first)
+	{
+		memset(defaultProjection, 0, 16 * sizeof(float));
+
+		float orthoProjectionMatrix[16];
+
+		int width, height;
+		if (glState.currentFBO)
+		{
+			width = glState.currentFBO->width;
+			height = glState.currentFBO->height;
+		}
+		else
+		{
+			width = glConfig.vidWidth;
+			height = glConfig.vidHeight;
+		}
+
+		Mat4Ortho(0, width, height, 0, 0, 1, orthoProjectionMatrix);
+
+		//ortho projection matrix
+		GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[ORTHO_PROJECTION],
+				orthoProjectionMatrix);
+
+		first = qfalse;
+	}
+
+	//We only need to do the following if the default projection changes
+	if (memcmp(defaultProjection, tr.vrParms.projection, 16 * sizeof(float)) != 0)
+	{
+		//Take a copy of the default projection
+		memcpy(defaultProjection, tr.vrParms.projection, 16 * sizeof(float));
+
+		//unadjusted projection matrix
+		GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[NORMAL_PROJECTION],
+				tr.vrParms.projection);
+	}
+
+	//Set up the buffers that won't change this frame
+	GLSL_ViewMatricesUniformBuffer(tr.viewParms.world.viewMatrix);
+}
 
 void GLSL_BindProgram(shaderProgram_t * program)
 {
@@ -1531,6 +1682,18 @@ void GLSL_BindProgram(shaderProgram_t * program)
 
 	if (GL_UseProgram(programObject))
 		backEnd.pc.c_glslShaderBinds++;
+
+
+	qglBindBufferBase(
+			GL_UNIFORM_BUFFER,
+			program->viewMatricesBinding,
+			viewMatricesBuffer);
+
+	qglBindBufferBase(
+			GL_UNIFORM_BUFFER,
+			program->projectionMatrixBinding,
+			projectionMatricesBuffer[backEnd.projection2D ? ORTHO_PROJECTION : NORMAL_PROJECTION]);
+
 }
 
 

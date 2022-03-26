@@ -339,10 +339,8 @@ void VR_DrawFrame( engine_t* engine ) {
 
 		Com_Frame();
 
-		for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; ++eye) {
-			engine->framebuffers.swapchainIndex = (engine->framebuffers.swapchainIndex + 1) %
-				engine->framebuffers.swapchainLength;
-		}
+		engine->framebuffers.swapchainIndex = (engine->framebuffers.swapchainIndex + 1) %
+			engine->framebuffers.swapchainLength;
 
 		// Hand over the eye images to the time warp.
 		vrapi_SubmitFrame2(engine->ovr, &frameDesc);		
@@ -363,6 +361,7 @@ void VR_DrawFrame( engine_t* engine ) {
 			layer.Textures[eye].SwapChainIndex = engine->framebuffers.swapchainIndex;
 			layer.Textures[eye].TexCoordsFromTanAngles = ovrMatrix4f_TanAngleMatrixFromProjection(&defaultProjection);
 		}
+		layer.Header.Flags |= VRAPI_FRAME_LAYER_FLAG_CHROMATIC_ABERRATION_CORRECTION;
 
         VR_ClearFrameBuffer(engine->framebuffers.framebuffers[engine->framebuffers.swapchainIndex], eyeW, eyeH);
 
@@ -371,10 +370,8 @@ void VR_DrawFrame( engine_t* engine ) {
 
 		Com_Frame();
 
-		for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; ++eye) {
-			engine->framebuffers.swapchainIndex = (engine->framebuffers.swapchainIndex + 1) %
-				engine->framebuffers.swapchainLength;
-		}
+		engine->framebuffers.swapchainIndex = (engine->framebuffers.swapchainIndex + 1) %
+			engine->framebuffers.swapchainLength;
 
 		const ovrLayerHeader2* layers[] = {
 			&layer.Header

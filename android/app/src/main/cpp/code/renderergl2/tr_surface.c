@@ -227,8 +227,8 @@ void RB_InstantQuad(vec4_t quadVerts[4])
 
 	GLSL_BindProgram(&tr.textureColorShader);
 
-	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
-	//GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELMATRIX, glState.modelview);
+	GLSL_BindBuffers(&tr.textureColorShader);
 	GLSL_SetUniformVec4(&tr.textureColorShader, UNIFORM_COLOR, colorWhite);
 
 	RB_InstantQuad2(quadVerts, texCoords);
@@ -540,8 +540,8 @@ static void RB_SurfaceBeam( void )
 	
 	GLSL_BindProgram(sp);
 
-	GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
-//	GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+	GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
+	GLSL_BindBuffers(sp);
 					
 	GLSL_SetUniformVec4(sp, UNIFORM_COLOR, colorRed);
 

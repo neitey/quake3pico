@@ -439,8 +439,8 @@ static void DrawSkySide( struct image_s *image, const int mins[2], const int max
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
-		//GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
+		GLSL_BindBuffers(sp);
 		
 		color[0] = 
 		color[1] = 
@@ -805,7 +805,7 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 
 		Mat4Translation( backEnd.viewParms.or.origin, translation );
 		Mat4Multiply( backEnd.viewParms.world.eyeViewMatrix[2], translation, modelview );
-		GL_SetModelviewMatrix( modelview, qtrue );
+		GL_SetModelviewMatrix( modelview );
 	}
 
 	dist = 	backEnd.viewParms.zFar / 1.75;		// div sqrt(3)
@@ -885,13 +885,13 @@ void RB_StageIteratorSky( void ) {
 			Mat4Copy( glState.modelview, oldmodelview );
 			Mat4Translation( backEnd.viewParms.or.origin, trans );
 			Mat4Multiply( glState.modelview, trans, product );
-			GL_SetModelviewMatrix( product, qtrue );
+			GL_SetModelviewMatrix( product );
 
 		}
 
 		DrawSkyBox( tess.shader );
 
-		GL_SetModelviewMatrix( oldmodelview, qtrue );
+		GL_SetModelviewMatrix( oldmodelview );
 	}
 
 	// generate the vertexes for all the clouds, which will be drawn

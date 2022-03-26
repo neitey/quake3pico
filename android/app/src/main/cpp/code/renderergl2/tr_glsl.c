@@ -312,24 +312,21 @@ static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *
         Q_strcat(dest, size, "#define NUM_VIEWS 2\n");
         Q_strcat(dest, size, "#extension GL_OVR_multiview2 : enable\n");
         Q_strcat(dest, size, "layout(num_views=NUM_VIEWS) in;\n");
+    }
 
-        // HACK: use in main menu medium float precision (to prevent issue with missing models textures)
-        if (Cvar_Get("r_uiFullScreen", "1", 0)->integer)
-            Q_strcat(dest, size, "precision mediump float;\n");
-        else
-            Q_strcat(dest, size, "precision highp float;\n");
+    // HACK: use in main menu medium float precision (to prevent issue with missing models textures)
+    if (Cvar_Get("r_uiFullScreen", "1", 0)->integer)
+        Q_strcat(dest, size, "precision mediump float;\n");
+    else
+        Q_strcat(dest, size, "precision highp float;\n");
 
+	if(shaderType == GL_VERTEX_SHADER)
+	{
 		Q_strcat(dest, size, "#define attribute in\n");
 		Q_strcat(dest, size, "#define varying out\n");
 	}
 	else
 	{
-        // HACK: use in main menu medium float precision (to prevent issue with missing models textures)
-        if (Cvar_Get("r_uiFullScreen", "1", 0)->integer)
-            Q_strcat(dest, size, "precision mediump float;\n");
-        else
-            Q_strcat(dest, size, "precision highp float;\n");
-
 		Q_strcat(dest, size, "#define varying in\n");
 
 		Q_strcat(dest, size, "out vec4 out_Color;\n");
@@ -1316,7 +1313,7 @@ void GLSL_InitGPUShaders(void)
 
 		if (i & LIGHTDEF_ENTITY_VERTEX_ANIMATION)
 		{
-			Q_strcat(extradefines, 1024, "#define USE_VERTEX_ANIMATION\n#define USE_MODELMATRIX\n");
+			Q_strcat(extradefines, 1024, "#define USE_VERTEX_ANIMATION\n");
 			attribs |= ATTR_POSITION2 | ATTR_NORMAL2;
 
 			if (r_normalMapping->integer)
@@ -1326,7 +1323,6 @@ void GLSL_InitGPUShaders(void)
 		}
 		else if (i & LIGHTDEF_ENTITY_BONE_ANIMATION)
 		{
-			Q_strcat(extradefines, 1024, "#define USE_MODELMATRIX\n");
 			Q_strcat(extradefines, 1024, va("#define USE_BONE_ANIMATION\n#define MAX_GLSL_BONES %d\n", glRefConfig.glslMaxAnimatedBones));
 			attribs |= ATTR_BONE_INDEXES | ATTR_BONE_WEIGHTS;
 		}
@@ -1677,19 +1673,45 @@ void GLSL_PrepareShaders(void)
 
 void GLSL_BindProgram(shaderProgram_t * program)
 {
-	GLuint programObject = program ? program->program : 0;
-	char *name = program ? program->name : "NULL";
+    GLuint programObject = program ? program->program : 0;
+    char *name = program ? program->name : "NULL";
 
-	if(r_logFile->integer)
-	{
-		// don't just call LogComment, or we will get a call to va() every frame!
-		GLimp_LogComment(va("--- GLSL_BindProgram( %s ) ---\n", name));
-	}
+    if (r_logFile->integer)
+    {
+        // don't just call LogComment, or we will get a call to va() every frame!
+        GLimp_LogComment(va("--- GLSL_BindProgram( %s ) ---\n", name));
+    }
 
-	if (GL_UseProgram(programObject))
-		backEnd.pc.c_glslShaderBinds++;
+    if (GL_UseProgram(programObject))
+        backEnd.pc.c_glslShaderBinds++;
+
+}
 
 
+static GLuint GLSL_CalculateProjection() {
+    GLuint result = NORMAL_PROJECTION;
+
+    mat4_t matrix;
+    Mat4Ortho(0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1, matrix);
+
+    if (
+        //Is this set up as an orthographic projection?
+        glState.projection[0] == matrix[0] &&
+        glState.projection[5] == matrix[5] &&
+        glState.projection[10] == matrix[10] &&
+        glState.projection[12] == matrix[12]&&
+        glState.projection[13] == matrix[13] &&
+        glState.projection[14] == matrix[14] &&
+        glState.projection[15] == matrix[15])
+    {
+        result = ORTHO_PROJECTION;
+    }
+
+    return result;
+}
+
+void GLSL_BindBuffers( shaderProgram_t * program )
+{
 	qglBindBufferBase(
 			GL_UNIFORM_BUFFER,
 			program->viewMatricesBinding,
@@ -1698,7 +1720,7 @@ void GLSL_BindProgram(shaderProgram_t * program)
 	qglBindBufferBase(
 			GL_UNIFORM_BUFFER,
 			program->projectionMatrixBinding,
-			projectionMatricesBuffer[backEnd.projection2D ? ORTHO_PROJECTION : NORMAL_PROJECTION]);
+			projectionMatricesBuffer[GLSL_CalculateProjection()]);
 
 }
 

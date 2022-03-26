@@ -197,12 +197,10 @@ void main()
 
 	gl_Position = u_ProjectionMatrix * (u_ViewMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0)));
 
-#if defined(USE_MODELMATRIX)
 	position  = (u_ModelMatrix * vec4(position, 1.0)).xyz;
 	normal    = (u_ModelMatrix * vec4(normal,   0.0)).xyz;
-  #if defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
+#if defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
 	tangent   = (u_ModelMatrix * vec4(tangent,  0.0)).xyz;
-  #endif
 #endif
 
 #if defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
@@ -213,9 +211,7 @@ void main()
 	vec3 L = u_LightOrigin.xyz - (position * u_LightOrigin.w);
 #elif defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
 	vec3 L = attr_LightDirection;
-  #if defined(USE_MODELMATRIX)
 	L = (u_ModelMatrix * vec4(L, 0.0)).xyz;
-  #endif
 #endif
 
 #if defined(USE_LIGHTMAP)

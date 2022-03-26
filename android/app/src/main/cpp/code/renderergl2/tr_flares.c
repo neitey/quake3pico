@@ -529,7 +529,7 @@ void RB_RenderFlares (void) {
 	Mat4Copy(glState.projection, oldprojection);
 	Mat4Copy(glState.modelview, oldmodelview);
 	Mat4Identity(matrix);
-	GL_SetModelviewMatrix(matrix, qtrue);
+	GL_SetModelviewMatrix(matrix);
 	Mat4Ortho( backEnd.viewParms.viewportX, backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth,
 	               backEnd.viewParms.viewportY, backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight,
 	               -99999, 99999, matrix );
@@ -544,7 +544,7 @@ void RB_RenderFlares (void) {
 	}
 
 	GL_SetProjectionMatrix(oldprojection);
-	GL_SetModelviewMatrix(oldmodelview, qtrue);
+	GL_SetModelviewMatrix(oldmodelview);
 }
 
 

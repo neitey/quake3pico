@@ -270,29 +270,11 @@ void GL_State( unsigned long stateBits )
 void GL_SetProjectionMatrix(mat4_t matrix)
 {
 	Mat4Copy(matrix, glState.projection);
-	Mat4Multiply(glState.projection, glState.modelview, glState.modelviewProjection);	
 }
 
-
-void GL_SetModelviewMatrix(mat4_t matrix, qboolean applyStereoView)
+void GL_SetModelviewMatrix(mat4_t matrix)
 {
-	/*
-	if (applyStereoView)
-	{
-		if (tr.refdef.stereoFrame == STEREO_LEFT) {
-			Mat4Multiply(tr.vrParms.viewL, matrix, glState.modelview);
-		} else if (tr.refdef.stereoFrame == STEREO_RIGHT) {
-			Mat4Multiply(tr.vrParms.viewR, matrix, glState.modelview);
-		} else {
-			Mat4Copy(matrix, glState.modelview);
-		}
-	} else
-	*/
-	{
-		Mat4Copy(matrix, glState.modelview);
-	}
-
-	Mat4Multiply(glState.projection, glState.modelview, glState.modelviewProjection);	
+	Mat4Copy(matrix, glState.modelview);
 }
 
 
@@ -427,7 +409,7 @@ void RB_BeginDrawingView (void) {
 		plane2[2] = DotProduct (backEnd.viewParms.or.axis[2], plane);
 		plane2[3] = DotProduct (plane, backEnd.viewParms.or.origin) - plane[3];
 #endif
-		GL_SetModelviewMatrix( s_flipMatrix, qtrue );
+		GL_SetModelviewMatrix( s_flipMatrix );
 	}
 }
 
@@ -546,7 +528,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
-			GL_SetModelviewMatrix( backEnd.or.eyeViewMatrix[2], qtrue );
+			GL_SetModelviewMatrix( backEnd.or.eyeViewMatrix[2] );
 
 			//
 			// change depthrange. Also change projection matrix so first person weapon does not look like coming
@@ -618,7 +600,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 	// go back to the world modelview matrix
 
-	GL_SetModelviewMatrix( backEnd.viewParms.world.eyeViewMatrix[2], qtrue );
+	GL_SetModelviewMatrix( backEnd.viewParms.world.eyeViewMatrix[2] );
 
 #ifdef __ANDROID__
 	glDepthRangef(0, 1);
@@ -670,7 +652,7 @@ void	RB_SetGL2D (void) {
 	Mat4Ortho(0, width, height, 0, 0, 1, matrix);
 	GL_SetProjectionMatrix(matrix);
 	Mat4Identity(matrix);
-	GL_SetModelviewMatrix(matrix, false);
+	GL_SetModelviewMatrix(matrix);
 
 	GL_State( GLS_DEPTHTEST_DISABLE |
 			  GLS_SRCBLEND_SRC_ALPHA |
@@ -754,7 +736,8 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 	GLSL_BindProgram(&tr.textureColorShader);
 	
 	//GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
-	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
+	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELMATRIX, glState.modelview);
+    GLSL_BindBuffers(&tr.textureColorShader);
 	GLSL_SetUniformVec4(&tr.textureColorShader, UNIFORM_COLOR, colorWhite);
 
 	RB_InstantQuad2(quadVerts, texCoords);

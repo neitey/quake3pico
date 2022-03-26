@@ -582,7 +582,7 @@ void R_RotateForViewer (void)
 		if (eye < 2)
 		{
 			float scale = ((r_stereoSeparation->value / 1000.0f) / 2.0f) * (32.0f);
-			VectorMA(origin, (eye == 0 ? 1.0f : -1.0f) * 100.0f, tr.viewParms.or.axis[1], origin);
+//			VectorMA(origin, (eye == 0 ? 1.0f : -1.0f) * 100.0f, tr.viewParms.or.axis[1], origin);
 		}
 
 		viewerMatrix[0] = tr.viewParms.or.axis[0][0];

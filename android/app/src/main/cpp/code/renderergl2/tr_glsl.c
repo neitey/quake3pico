@@ -1313,7 +1313,7 @@ void GLSL_InitGPUShaders(void)
 
 		if (i & LIGHTDEF_ENTITY_VERTEX_ANIMATION)
 		{
-			Q_strcat(extradefines, 1024, "#define USE_VERTEX_ANIMATION\n");
+            Q_strcat(extradefines, 1024, "#define USE_VERTEX_ANIMATION\n#define USE_MODELMATRIX\n");
 			attribs |= ATTR_POSITION2 | ATTR_NORMAL2;
 
 			if (r_normalMapping->integer)
@@ -1323,6 +1323,7 @@ void GLSL_InitGPUShaders(void)
 		}
 		else if (i & LIGHTDEF_ENTITY_BONE_ANIMATION)
 		{
+            Q_strcat(extradefines, 1024, "#define USE_MODELMATRIX\n");
 			Q_strcat(extradefines, 1024, va("#define USE_BONE_ANIMATION\n#define MAX_GLSL_BONES %d\n", glRefConfig.glslMaxAnimatedBones));
 			attribs |= ATTR_BONE_INDEXES | ATTR_BONE_WEIGHTS;
 		}
@@ -1625,35 +1626,42 @@ void GLSL_ShutdownGPUShaders(void)
 		GLSL_DeleteGPUShader(&tr.depthBlurShader[i]);
 }
 
-void GLSL_PrepareShaders(void)
+void GLSL_PrepareUniformBuffers(void)
 {
-	static qboolean first = qtrue;
-	static float defaultProjection[16];
-	if (first)
+    int width, height;
+    if (glState.currentFBO)
+    {
+        width = glState.currentFBO->width;
+        height = glState.currentFBO->height;
+    }
+    else
+    {
+        width = glConfig.vidWidth;
+        height = glConfig.vidHeight;
+    }
+
+    static qboolean first = qtrue;
+    static float defaultProjection[16];
+    if (first)
+    {
+        first = qfalse;
+        memset(defaultProjection, 0, 16 * sizeof(float));
+    }
+
+    static int vidWidth = 1;
+	static int vidHeight = 1;
+	if (vidWidth != width || vidHeight != height)
 	{
-		memset(defaultProjection, 0, 16 * sizeof(float));
 
 		float orthoProjectionMatrix[16];
-
-		int width, height;
-		if (glState.currentFBO)
-		{
-			width = glState.currentFBO->width;
-			height = glState.currentFBO->height;
-		}
-		else
-		{
-			width = glConfig.vidWidth;
-			height = glConfig.vidHeight;
-		}
-
-		Mat4Ortho(0, width, height, 0, 0, 1, orthoProjectionMatrix);
+		Mat4Ortho(0, vidWidth, vidHeight, 0, 0, 1, orthoProjectionMatrix);
 
 		//ortho projection matrix
 		GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[ORTHO_PROJECTION],
 				orthoProjectionMatrix);
 
-		first = qfalse;
+        vidWidth = width;
+        vidHeight = height;
 	}
 
 	//We only need to do the following if the default projection changes
@@ -1691,18 +1699,21 @@ void GLSL_BindProgram(shaderProgram_t * program)
 static GLuint GLSL_CalculateProjection() {
     GLuint result = NORMAL_PROJECTION;
 
-    mat4_t matrix;
-    Mat4Ortho(0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1, matrix);
+	int width, height;
+	if (glState.currentFBO)
+	{
+		width = glState.currentFBO->width;
+		height = glState.currentFBO->height;
+	}
+	else
+	{
+		width = glConfig.vidWidth;
+		height = glConfig.vidHeight;
+	}
 
-    if (
-        //Is this set up as an orthographic projection?
-        glState.projection[0] == matrix[0] &&
-        glState.projection[5] == matrix[5] &&
-        glState.projection[10] == matrix[10] &&
-        glState.projection[12] == matrix[12]&&
-        glState.projection[13] == matrix[13] &&
-        glState.projection[14] == matrix[14] &&
-        glState.projection[15] == matrix[15])
+	mat4_t matrix;
+    Mat4Ortho(0, width, height, 0, 0, 1, matrix);
+    if (memcmp(glState.projection, matrix, sizeof(float) * 16) == 0)
     {
         result = ORTHO_PROJECTION;
     }

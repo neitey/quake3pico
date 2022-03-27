@@ -25,6 +25,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <string.h> // memcpy
 
+#include "../vr/vr_base.h"
+
 trGlobals_t		tr;
 
 static float	s_flipMatrix[16] = {
@@ -36,6 +38,8 @@ static float	s_flipMatrix[16] = {
 	0, 0, 0, 1
 };
 
+extern cvar_t *vr_worldscale;
+extern cvar_t *vr_worldscaleScaler;
 
 refimport_t	ri;
 
@@ -532,8 +536,9 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms,
 	glMatrix[11] = 0;
 	glMatrix[15] = 1;
 
-	Mat4Copy(glMatrix, or->transformMatrix);
-	myGlMultMatrix( glMatrix, viewParms->world.eyeViewMatrix[2], or->eyeViewMatrix[2] );
+    for (int eye = 0; eye <= 2; ++eye) {
+        myGlMultMatrix( glMatrix, viewParms->world.eyeViewMatrix[eye], or->eyeViewMatrix[eye] );
+    }
 
 	// calculate the viewer origin in the model's space
 	// needed for fog, specular, and environment mapping
@@ -579,10 +584,10 @@ void R_RotateForViewer (void)
 		vec3_t	origin;
 		VectorCopy(tr.viewParms.or.origin, origin);
 
-		if (eye < 2)
+		if (eye < 2 && !VR_useScreenLayer())
 		{
-			float scale = ((r_stereoSeparation->value / 1000.0f) / 2.0f) * (32.0f);
-//			VectorMA(origin, (eye == 0 ? 1.0f : -1.0f) * 100.0f, tr.viewParms.or.axis[1], origin);
+			float scale = ((r_stereoSeparation->value / 1000.0f) / 2.0f) * vr_worldscale->value * vr_worldscaleScaler->value;
+			VectorMA(origin, (eye == 0 ? 1.0f : -1.0f) * scale, tr.viewParms.or.axis[1], origin);
 		}
 
 		viewerMatrix[0] = tr.viewParms.or.axis[0][0];
@@ -726,23 +731,11 @@ R_SetupProjection
 */
 void R_SetupProjection(viewParms_t *dest, float zProj, float zFar, qboolean computeFrustum)
 {
-	float	xmin, xmax, ymin, ymax;
-	float	width, height, stereoSep = r_stereoSeparation->value;
-
-	ymax = zProj * tan(dest->fovY * M_PI / 360.0f);
-	ymin = -ymax;
-
-	xmax = zProj * tan(dest->fovX * M_PI / 360.0f);
-	xmin = -xmax;
-
-	width = xmax - xmin;
-	height = ymax - ymin;
-
 	memcpy(&dest->projectionMatrix, &tr.vrParms.projection, sizeof(dest->projectionMatrix));
 
 	// Now that we have all the data for the projection matrix we can also setup the view frustum.
 	if(computeFrustum)
-		R_SetupFrustum( );//dest, xmin, xmax, ymax, zProj, zFar, stereoSep);
+		R_SetupFrustum( );
 }
 
 /*
@@ -1708,9 +1701,9 @@ void R_RenderView (viewParms_t *parms) {
 	// set viewParms.world
 	R_RotateForViewer ();
 
-	R_SetupProjection(&tr.viewParms, r_zproj->value, tr.viewParms.zFar, qtrue);
+    GLSL_PrepareUniformBuffers();
 
-	GLSL_PrepareShaders();
+    R_SetupProjection(&tr.viewParms, r_zproj->value, tr.viewParms.zFar, qtrue);
 
 	R_GenerateDrawSurfs();
 

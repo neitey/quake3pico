@@ -69,6 +69,12 @@ void	trap_Cvar_Set( const char *var_name, const char *value ) {
 	syscall( CG_CVAR_SET, var_name, value );
 }
 
+void trap_Cvar_SetValue( const char *var_name, const float value ) {
+	char buffer[256];
+	Com_sprintf(buffer, 255, "%g", value);
+	syscall( CG_CVAR_SET, var_name, buffer );
+}
+
 void trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize ) {
 	syscall( CG_CVAR_VARIABLESTRINGBUFFER, var_name, buffer, bufsize );
 }

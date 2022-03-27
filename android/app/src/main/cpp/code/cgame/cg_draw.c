@@ -2797,19 +2797,23 @@ void CG_DrawActive( void ) {
     if ( cg.demoPlayback || CG_IsThirdPersonFollowMode(VRFM_THIRDPERSON_1))
     {
         worldscale *= SPECTATOR_WORLDSCALE_MULTIPLIER;
+		trap_Cvar_SetValue("vr_worldscaleScaler", SPECTATOR_WORLDSCALE_MULTIPLIER);
         //Just move camera down about 20cm
         heightOffset = -0.2f;
     }
 	else if (CG_IsDeathCam() || CG_IsThirdPersonFollowMode(VRFM_THIRDPERSON_2))
 	{
 		worldscale *= SPECTATOR2_WORLDSCALE_MULTIPLIER;
+		trap_Cvar_SetValue("vr_worldscaleScaler", SPECTATOR2_WORLDSCALE_MULTIPLIER);
 		//Just move camera down about 50cm
 		heightOffset = -0.5f;
 	}
+	else
+	{
+		float zoomCoeff =  ((2.5f-vr->weapon_zoomLevel)/1.5f); // normally 1.0
+		trap_Cvar_SetValue("vr_worldscaleScaler", zoomCoeff);
+	}
 
-
-	float ipd = trap_Cvar_VariableValue("r_stereoSeparation") / 1000.0f;
-	float separation = 0.0F;//worldscale * (ipd / 2) * (cg.stereoView == STEREO_LEFT ? -1.0f : 1.0f);
 
 	if (cg.snap->ps.pm_flags & PMF_FOLLOW && vr->follow_mode == VRFM_FIRSTPERSON)
     {
@@ -2847,9 +2851,6 @@ void CG_DrawActive( void ) {
 			VectorCopy(trace.endpos, cg.refdef.vieworg);
 		}
 	}
-
-	float zoomCoeff =  ((2.5f-vr->weapon_zoomLevel)/1.5f);
-	VectorMA(cg.refdef.vieworg, -separation * zoomCoeff, cg.refdef.viewaxis[1], cg.refdef.vieworg);
 
 	// draw 3D view
 	trap_R_RenderScene( &cg.refdef );

@@ -107,13 +107,10 @@ typedef struct {
 	vec3_t		origin;			// in world coordinates
 	vec3_t		axis[3];		// orientation in world
 	vec3_t		viewOrigin;		// viewParms->or.origin in local coordinates
-//	float		eyeViewMatrix[2][16];
 	union {
 		float eyeViewMatrix[3][16];
 		float viewMatrix[48];
 	};
-
-	float		transformMatrix[16];
 } orientationr_t;
 
 // Ensure this is >= the ATTR_INDEX_COUNT enum below
@@ -2240,7 +2237,7 @@ GLSL
 */
 
 void GLSL_InitGPUShaders(void);
-void GLSL_PrepareShaders(void);
+void GLSL_PrepareUniformBuffers(void);
 void GLSL_ShutdownGPUShaders(void);
 void GLSL_VertexAttribPointers(uint32_t attribBits);
 void GLSL_BindProgram(shaderProgram_t * program);

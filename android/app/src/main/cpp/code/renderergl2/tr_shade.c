@@ -1421,8 +1421,6 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 
 		GLSL_BindProgram(sp);
 
-//		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
-
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
 		GLSL_BindBuffers(sp);
 

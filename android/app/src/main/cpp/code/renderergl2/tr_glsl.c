@@ -129,8 +129,7 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_FogEyeT",      GLSL_FLOAT },
 	{ "u_FogColorMask", GLSL_VEC4 },
 
-	{ "u_ModelMatrix",               GLSL_MAT16 },
-	{ "u_ModelTransformMatrix",      GLSL_MAT16 },
+	{ "u_ModelMatrix",   GLSL_MAT16 },
 
 	{ "u_Time",          GLSL_FLOAT },
 	{ "u_VertexLerp" ,   GLSL_FLOAT },
@@ -1314,7 +1313,7 @@ void GLSL_InitGPUShaders(void)
 
 		if (i & LIGHTDEF_ENTITY_VERTEX_ANIMATION)
 		{
-            Q_strcat(extradefines, 1024, "#define USE_VERTEX_ANIMATION\n#define USE_MODELTRANSFORMMATRIX\n");
+            Q_strcat(extradefines, 1024, "#define USE_VERTEX_ANIMATION\n#define USE_MODELMATRIX\n");
 			attribs |= ATTR_POSITION2 | ATTR_NORMAL2;
 
 			if (r_normalMapping->integer)
@@ -1324,7 +1323,7 @@ void GLSL_InitGPUShaders(void)
 		}
 		else if (i & LIGHTDEF_ENTITY_BONE_ANIMATION)
 		{
-            Q_strcat(extradefines, 1024, "#define USE_MODELTRANSFORMMATRIX\n");
+            Q_strcat(extradefines, 1024, "#define USE_MODELMATRIX\n");
 			Q_strcat(extradefines, 1024, va("#define USE_BONE_ANIMATION\n#define MAX_GLSL_BONES %d\n", glRefConfig.glslMaxAnimatedBones));
 			attribs |= ATTR_BONE_INDEXES | ATTR_BONE_WEIGHTS;
 		}
@@ -1677,7 +1676,7 @@ void GLSL_PrepareUniformBuffers(void)
 	}
 
 	//Set up the buffers that won't change this frame
-	GLSL_ViewMatricesUniformBuffer(tr.viewParms.world.viewMatrix);
+	GLSL_ViewMatricesUniformBuffer(tr.viewParms.world.eyeViewMatrix);
 }
 
 void GLSL_BindProgram(shaderProgram_t * program)

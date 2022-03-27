@@ -136,7 +136,7 @@ public class MainActivity extends SDLActivity // implements KeyEvent.Callback
 
 		Log.d(TAG, "setting env");
 		try {
-			//commandLineParams += " +map q3dm6";
+			commandLineParams += " +map q3dm7";
 			setenv("commandline", commandLineParams, true);
 		} catch (Exception e) {
 		}

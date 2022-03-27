@@ -272,9 +272,9 @@ void GL_SetProjectionMatrix(mat4_t matrix)
 	Mat4Copy(matrix, glState.projection);
 }
 
-void GL_SetModelviewMatrix(mat4_t matrix)
+void GL_SetModelMatrix(mat4_t matrix)
 {
-	Mat4Copy(matrix, glState.modelview);
+	Mat4Copy(matrix, glState.modelMatrix);
 }
 
 
@@ -410,8 +410,7 @@ void RB_BeginDrawingView (void) {
 		plane2[3] = DotProduct (plane, backEnd.viewParms.or.origin) - plane[3];
 #endif
 
-		//TODO:  This probably won't work at the moment!!
-		GL_SetModelviewMatrix( s_flipMatrix );
+		GL_SetModelMatrix( s_flipMatrix );
 	}
 }
 
@@ -530,7 +529,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
-			GL_SetModelviewMatrix( backEnd.or.eyeViewMatrix[2] );
+			GL_SetModelMatrix( backEnd.or.modelMatrix );
 
 			//
 			// change depthrange. Also change projection matrix so first person weapon does not look like coming
@@ -600,9 +599,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	if (glRefConfig.framebufferObject)
 		FBO_Bind(fbo);
 
-	// go back to the world modelview matrix
+	// go back to the world model matrix
 
-	GL_SetModelviewMatrix( backEnd.viewParms.world.eyeViewMatrix[2] );
+	GL_SetModelMatrix( backEnd.viewParms.world.modelMatrix );
 
 #ifdef __ANDROID__
 	glDepthRangef(0, 1);
@@ -654,7 +653,7 @@ void	RB_SetGL2D (void) {
 	Mat4Ortho(0, width, height, 0, 0, 1, matrix);
 	GL_SetProjectionMatrix(matrix);
 	Mat4Identity(matrix);
-	GL_SetModelviewMatrix(matrix);
+	GL_SetModelMatrix(matrix);
 
 	GL_State( GLS_DEPTHTEST_DISABLE |
 			  GLS_SRCBLEND_SRC_ALPHA |
@@ -737,8 +736,7 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 
 	GLSL_BindProgram(&tr.textureColorShader);
 
-	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
-	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELMATRIX, glState.modelview);
+	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELMATRIX, glState.modelMatrix);
     GLSL_BindBuffers(&tr.textureColorShader);
 	GLSL_SetUniformVec4(&tr.textureColorShader, UNIFORM_COLOR, colorWhite);
 

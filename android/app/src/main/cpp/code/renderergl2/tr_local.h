@@ -107,11 +107,8 @@ typedef struct {
 	vec3_t		origin;			// in world coordinates
 	vec3_t		axis[3];		// orientation in world
 	vec3_t		viewOrigin;		// viewParms->or.origin in local coordinates
-	float		transformMatrix[16];
-	union {
-		float eyeViewMatrix[3][16];
-		float viewMatrix[48];
-	};
+	float		modelMatrix[16];
+    float       eyeViewMatrix[3][16];
 } orientationr_t;
 
 // Ensure this is >= the ATTR_INDEX_COUNT enum below
@@ -674,7 +671,6 @@ typedef enum
 	UNIFORM_FOGCOLORMASK,
 
 	UNIFORM_MODELMATRIX,
-	UNIFORM_MODELTRANSFORMMATRIX,
 
 	UNIFORM_TIME,
 	UNIFORM_VERTEXLERP,
@@ -843,6 +839,7 @@ typedef struct {
 	vec3_t		visBounds[2];
 	float		zFar;
 	float       zNear;
+    stereoFrame_t	stereoFrame;
 } viewParms_t;
 
 typedef struct {
@@ -1390,7 +1387,7 @@ typedef struct {
 	FBO_t          *currentFBO;
 	vao_t          *currentVao;
 
-	mat4_t        modelview;
+	mat4_t        modelMatrix;
 	mat4_t        projection;
 } glstate_t;
 
@@ -1922,7 +1919,7 @@ void	GL_CheckErrs( char *file, int line );
 #define GL_CheckErrors(...) GL_CheckErrs(__FILE__, __LINE__)
 void	GL_State( unsigned long stateVector );
 void    GL_SetProjectionMatrix(mat4_t matrix);
-void    GL_SetModelviewMatrix(mat4_t matrix);
+void    GL_SetModelMatrix(mat4_t matrix);
 void	GL_Cull( int cullType );
 
 #define GLS_SRCBLEND_ZERO						0x00000001

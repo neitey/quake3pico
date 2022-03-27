@@ -56,10 +56,6 @@ uniform highp mat4 u_ModelMatrix;
 uniform vec4   u_BaseColor;
 uniform vec4   u_VertColor;
 
-#if defined(USE_MODELTRANSFORMMATRIX)
-uniform mat4   u_ModelTransformMatrix;
-#endif
-
 
 #if defined(USE_VERTEX_ANIMATION)
 uniform float  u_VertexLerp;
@@ -202,11 +198,11 @@ void main()
 
 	gl_Position = u_ProjectionMatrix * (u_ViewMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0)));
 
-#if defined(USE_MODELTRANSFORMMATRIX)
-	position  = (u_ModelTransformMatrix * vec4(position, 1.0)).xyz;
-	normal    = (u_ModelTransformMatrix * vec4(normal,   0.0)).xyz;
+#if defined(USE_MODELMATRIX)
+	position  = (u_ModelMatrix * vec4(position, 1.0)).xyz;
+	normal    = (u_ModelMatrix * vec4(normal,   0.0)).xyz;
 #if defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
-	tangent   = (u_ModelTransformMatrix * vec4(tangent,  0.0)).xyz;
+	tangent   = (u_ModelMatrix * vec4(tangent,  0.0)).xyz;
 #endif
 #endif
 
@@ -218,8 +214,8 @@ void main()
 	vec3 L = u_LightOrigin.xyz - (position * u_LightOrigin.w);
 #elif defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
 	vec3 L = attr_LightDirection;
-#if defined(USE_MODELTRANSFORMMATRIX)
-	L = (u_ModelTransformMatrix * vec4(L, 0.0)).xyz;
+#if defined(USE_MODELMATRIX)
+	L = (u_ModelMatrix * vec4(L, 0.0)).xyz;
 #endif
 #endif
 

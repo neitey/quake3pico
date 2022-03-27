@@ -577,6 +577,7 @@ void FBO_BlitFromTexture(struct image_s *src, vec4_t inSrcTexCorners, vec2_t inS
 
 	GLSL_BindProgram(shaderProgram);
 
+	GLSL_SetUniformMat4(shaderProgram, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 	GLSL_SetUniformMat4(shaderProgram, UNIFORM_MODELMATRIX, glState.modelview);
 	GLSL_BindBuffers(shaderProgram);
 	GLSL_SetUniformVec4(shaderProgram, UNIFORM_COLOR, color);

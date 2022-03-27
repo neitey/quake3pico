@@ -107,6 +107,7 @@ typedef struct {
 	vec3_t		origin;			// in world coordinates
 	vec3_t		axis[3];		// orientation in world
 	vec3_t		viewOrigin;		// viewParms->or.origin in local coordinates
+	float		transformMatrix[16];
 	union {
 		float eyeViewMatrix[3][16];
 		float viewMatrix[48];
@@ -673,6 +674,7 @@ typedef enum
 	UNIFORM_FOGCOLORMASK,
 
 	UNIFORM_MODELMATRIX,
+	UNIFORM_MODELTRANSFORMMATRIX,
 
 	UNIFORM_TIME,
 	UNIFORM_VERTEXLERP,

@@ -114,6 +114,7 @@ static void DrawTris (shaderCommands_t *input) {
 
 		GLSL_BindProgram(sp);
 
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
         GLSL_BindBuffers(sp);
 		VectorSet4(color, 1, 1, 1, 1);
@@ -353,6 +354,7 @@ static void ProjectDlightTexture( void ) {
 
 		GLSL_BindProgram(sp);
 
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
         GLSL_BindBuffers(sp);
 
@@ -693,6 +695,7 @@ static void ForwardDlight( void ) {
 
 		GLSL_BindProgram(sp);
 
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
 		GLSL_BindBuffers(sp);
 		GLSL_SetUniformVec3(sp, UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
@@ -756,6 +759,7 @@ static void ForwardDlight( void ) {
 		GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
 
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
 		GLSL_BindBuffers(sp);
 
@@ -848,6 +852,7 @@ static void ProjectPshadowVBOGLSL( void ) {
 
 		GLSL_BindProgram(sp);
 
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
 		GLSL_BindBuffers(sp);
 
@@ -925,6 +930,7 @@ static void RB_FogPass( void ) {
 
 	fog = tr.world->fogs + tess.fogNum;
 
+	GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 	GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
 	GLSL_BindBuffers(sp);
 
@@ -1100,6 +1106,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 
 		GLSL_BindProgram(sp);
 
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
 		GLSL_BindBuffers(sp);
 		GLSL_SetUniformVec3(sp, UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
@@ -1217,6 +1224,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			}
 		}
 
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
 		GLSL_BindBuffers(sp);
 
@@ -1421,6 +1429,7 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 
 		GLSL_BindProgram(sp);
 
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELTRANSFORMMATRIX, backEnd.or.transformMatrix);
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelview);
 		GLSL_BindBuffers(sp);
 

@@ -536,6 +536,7 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms,
 	glMatrix[11] = 0;
 	glMatrix[15] = 1;
 
+	Mat4Copy(glMatrix, or->transformMatrix);
     for (int eye = 0; eye <= 2; ++eye) {
         myGlMultMatrix( glMatrix, viewParms->world.eyeViewMatrix[eye], or->eyeViewMatrix[eye] );
     }

@@ -64,7 +64,7 @@ uniformInfo_t;
 #define ORTHO_PROJECTION			0
 #define NORMAL_PROJECTION			1
 
-GLuint		viewMatricesBuffer;
+GLuint		viewMatricesBuffer[2];
 GLuint		projectionMatricesBuffer[2];
 
 
@@ -175,24 +175,36 @@ GLSL_ViewMatricesUniformBuffer
 */
 static void GLSL_ViewMatricesUniformBuffer(const float value[32]) {
 
-	// Update the scene matrices.
-	qglBindBuffer(GL_UNIFORM_BUFFER, viewMatricesBuffer);
-	float* viewMatrices = (float*)qglMapBufferRange(
-			GL_UNIFORM_BUFFER,
-			0,
-			2 * 16 * sizeof(float),
-			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-
-	if (viewMatrices == NULL)
+	for (int i = 0; i < 2; ++i)
 	{
-		ri.Error(ERR_DROP, "View Matrices Uniform Buffer is NULL");
-		return;
+		// Update the scene matrices for when we are using a normal projection
+		qglBindBuffer(GL_UNIFORM_BUFFER, viewMatricesBuffer[i]);
+		float *viewMatrices = (float *) qglMapBufferRange(
+				GL_UNIFORM_BUFFER,
+				0,
+				2 * 16 * sizeof(float),
+				GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+
+		if (viewMatrices == NULL)
+		{
+			ri.Error(ERR_DROP, "View Matrices Uniform Buffer is NULL");
+			return;
+		}
+
+		if (i == ORTHO_PROJECTION)
+		{
+			//For now just set identity matrices
+			Mat4Identity(viewMatrices);
+			Mat4Identity(viewMatrices + (16 * sizeof(float)));
+		}
+		else
+		{
+			memcpy((char *) viewMatrices, value, 32 * sizeof(float));
+		}
+
+		qglUnmapBuffer(GL_UNIFORM_BUFFER);
+		qglBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
-
-	memcpy((char*)viewMatrices, value, 32 * sizeof(float));
-
-	qglUnmapBuffer(GL_UNIFORM_BUFFER);
-	qglBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 /*
@@ -1036,18 +1048,18 @@ void GLSL_InitGPUShaders(void)
 
 	ri.Printf(PRINT_ALL, "------- GLSL_InitGPUShaders -------\n");
 
-	//Generate buffer for 2 * view matrices
-	qglGenBuffers(1, &viewMatricesBuffer);
-	qglBindBuffer(GL_UNIFORM_BUFFER, viewMatricesBuffer);
-	qglBufferData(
-			GL_UNIFORM_BUFFER,
-			2 * 16 * sizeof(float),
-			NULL,
-			GL_STATIC_DRAW);
-	qglBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 	for (int i = 0; i < 2; ++i)
 	{
+		//Generate buffer for 2 * view matrices
+		qglGenBuffers(1, &viewMatricesBuffer[i]);
+		qglBindBuffer(GL_UNIFORM_BUFFER, viewMatricesBuffer[i]);
+		qglBufferData(
+				GL_UNIFORM_BUFFER,
+				2 * 16 * sizeof(float),
+				NULL,
+				GL_STATIC_DRAW);
+		qglBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 		qglGenBuffers(1, &projectionMatricesBuffer[i]);
 		qglBindBuffer(GL_UNIFORM_BUFFER, projectionMatricesBuffer[i]);
 		qglBufferData(
@@ -1695,25 +1707,9 @@ void GLSL_BindProgram(shaderProgram_t * program)
 
 }
 
-
 static GLuint GLSL_CalculateProjection() {
     GLuint result = NORMAL_PROJECTION;
-
-	int width, height;
-	if (glState.currentFBO)
-	{
-		width = glState.currentFBO->width;
-		height = glState.currentFBO->height;
-	}
-	else
-	{
-		width = glConfig.vidWidth;
-		height = glConfig.vidHeight;
-	}
-
-	mat4_t matrix;
-    Mat4Ortho(0, width, height, 0, 0, 1, matrix);
-    if (memcmp(glState.projection, matrix, sizeof(float) * 16) == 0)
+    if (backEnd.projection2D)
     {
         result = ORTHO_PROJECTION;
     }
@@ -1723,15 +1719,16 @@ static GLuint GLSL_CalculateProjection() {
 
 void GLSL_BindBuffers( shaderProgram_t * program )
 {
+	GLuint projection = GLSL_CalculateProjection();
 	qglBindBufferBase(
 			GL_UNIFORM_BUFFER,
 			program->viewMatricesBinding,
-			viewMatricesBuffer);
+			viewMatricesBuffer[projection]);
 
 	qglBindBufferBase(
 			GL_UNIFORM_BUFFER,
 			program->projectionMatrixBinding,
-			projectionMatricesBuffer[GLSL_CalculateProjection()]);
+			projectionMatricesBuffer[projection]);
 
 }
 

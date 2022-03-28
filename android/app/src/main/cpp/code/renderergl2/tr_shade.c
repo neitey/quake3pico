@@ -583,9 +583,9 @@ static void ComputeFogValues(vec4_t fogDistanceVector, vec4_t fogDepthVector, fl
 	fog = tr.world->fogs + tess.fogNum;
 
 	VectorSubtract( backEnd.or.origin, backEnd.viewParms.or.origin, local );
-	fogDistanceVector[0] = -backEnd.or.eyeViewMatrix[2][2];
-	fogDistanceVector[1] = -backEnd.or.eyeViewMatrix[2][6];
-	fogDistanceVector[2] = -backEnd.or.eyeViewMatrix[2][10];
+	fogDistanceVector[0] = -backEnd.or.modelView[2];
+	fogDistanceVector[1] = -backEnd.or.modelView[6];
+	fogDistanceVector[2] = -backEnd.or.modelView[10];
 	fogDistanceVector[3] = DotProduct( local, backEnd.viewParms.or.axis[0] );
 
 	// scale the fog vectors based on the fog's thickness

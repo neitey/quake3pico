@@ -536,10 +536,8 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms,
 	glMatrix[11] = 0;
 	glMatrix[15] = 1;
 
-	Mat4Copy(glMatrix, or->modelMatrix);
-    for (int eye = 0; eye <= 2; ++eye) {
-        myGlMultMatrix( glMatrix, viewParms->world.eyeViewMatrix[eye], or->eyeViewMatrix[eye] );
-    }
+    myGlMultMatrix( glMatrix, viewParms->world.modelMatrix, or->modelMatrix );
+    myGlMultMatrix( glMatrix, viewParms->world.modelView, or->modelView );
 
 	// calculate the viewer origin in the model's space
 	// needed for fog, specular, and environment mapping
@@ -585,7 +583,7 @@ void R_RotateForViewer (void)
 		vec3_t	origin;
 		VectorCopy(tr.viewParms.or.origin, origin);
 
-		if (eye < 2 && !VR_useScreenLayer())
+		if ((eye < 2) && !VR_useScreenLayer())
 		{
 			float scale = ((r_stereoSeparation->value / 1000.0f) / 2.0f) * vr_worldscale->value * vr_worldscaleScaler->value;
 			VectorMA(origin, (eye == 0 ? 1.0f : -1.0f) * scale, tr.viewParms.or.axis[1], origin);
@@ -616,8 +614,16 @@ void R_RotateForViewer (void)
 
 		// convert from our coordinate system (looking down X)
 		// to OpenGL's coordinate system (looking down -Z)
-		Mat4Copy(viewerMatrix, tr.or.modelMatrix);
-		myGlMultMatrix(viewerMatrix, s_flipMatrix, tr.or.eyeViewMatrix[eye]);
+		if (eye < 2)
+		{
+			myGlMultMatrix(viewerMatrix, s_flipMatrix, tr.or.eyeViewMatrix[eye]);
+		}
+		else
+		{
+			//World Model View
+			Mat4Copy(viewerMatrix, tr.or.modelMatrix);
+			myGlMultMatrix(viewerMatrix, s_flipMatrix, tr.or.modelView);
+		}
 	}
 
 	tr.viewParms.world = tr.or;
@@ -1165,7 +1171,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 		int j;
 		unsigned int pointFlags = 0;
 
-		R_TransformModelToClip( tess.xyz[i], tr.or.eyeViewMatrix[2], tr.viewParms.projectionMatrix, eye, clip );
+		R_TransformModelToClip( tess.xyz[i], tr.or.modelView, tr.viewParms.projectionMatrix, eye, clip );
 
 		for ( j = 0; j < 3; j++ )
 		{
@@ -2490,7 +2496,7 @@ void R_RenderSunShadowMaps(const refdef_t *fd, int level)
 			R_SortDrawSurfs( tr.refdef.drawSurfs + firstDrawSurf, tr.refdef.numDrawSurfs - firstDrawSurf );
 		}
 
-		Mat4Multiply(tr.viewParms.projectionMatrix, tr.viewParms.world.eyeViewMatrix[2], tr.refdef.sunShadowMvp[level]);
+		Mat4Multiply(tr.viewParms.projectionMatrix, tr.viewParms.world.modelView, tr.refdef.sunShadowMvp[level]);
 	}
 }
 

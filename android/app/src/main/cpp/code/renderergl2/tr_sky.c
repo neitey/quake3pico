@@ -783,8 +783,6 @@ void RB_DrawSun( float scale, shader_t *shader ) {
 		return;
 	}
 
-	//qglLoadMatrixf( backEnd.viewParms.world.eyeViewMatrix[2] );
-	//qglTranslatef (backEnd.viewParms.or.origin[0], backEnd.viewParms.or.origin[1], backEnd.viewParms.or.origin[2]);
 	{
 		// FIXME: this could be a lot cleaner
 		mat4_t translation, modelmatrix;

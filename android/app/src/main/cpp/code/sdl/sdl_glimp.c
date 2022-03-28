@@ -1106,6 +1106,7 @@ Responsible for doing a swapbuffers
 */
 void GLimp_EndFrame( void )
 {
+#if 0
 	// don't flip if drawing to front buffer
 	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 )
 	{
@@ -1144,4 +1145,5 @@ void GLimp_EndFrame( void )
 
 		r_fullscreen->modified = qfalse;
 	}
+#endif
 }

@@ -199,16 +199,16 @@ R_TransformModelToClip
 
 ==========================
 */
-void R_TransformModelToClip( const vec3_t src, const float *modelMatrix, const float *projectionMatrix,
+void R_TransformModelToClip( const vec3_t src, const float *viewMatrix, const float *projectionMatrix,
 							vec4_t eye, vec4_t dst ) {
 	int i;
 
 	for ( i = 0 ; i < 4 ; i++ ) {
 		eye[i] = 
-			src[0] * modelMatrix[ i + 0 * 4 ] +
-			src[1] * modelMatrix[ i + 1 * 4 ] +
-			src[2] * modelMatrix[ i + 2 * 4 ] +
-			1 * modelMatrix[ i + 3 * 4 ];
+			src[0] * viewMatrix[ i + 0 * 4 ] +
+			src[1] * viewMatrix[ i + 1 * 4 ] +
+			src[2] * viewMatrix[ i + 2 * 4 ] +
+			1 * viewMatrix[ i + 3 * 4 ];
 	}
 
 	for ( i = 0 ; i < 4 ; i++ ) {

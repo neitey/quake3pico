@@ -1388,6 +1388,7 @@ const void	*RB_SwapBuffers( const void *data ) {
 		ri.Hunk_FreeTempMemory( stencilReadback );
 	}
 
+#if 0
 	if (glRefConfig.framebufferObject)
 	{
 		if (!backEnd.framePostProcessed)
@@ -1404,14 +1405,16 @@ const void	*RB_SwapBuffers( const void *data ) {
 			}
 		}
 	}
+#endif
 
-	if ( !glState.finishCalled ) {
+	if ( !glState.finishCalled )
+    {
 		qglFinish();
 	}
 
-	GLimp_LogComment( "***************** RB_SwapBuffers *****************\n\n\n" );
+	//GLimp_LogComment( "***************** RB_SwapBuffers *****************\n\n\n" );
 
-	GLimp_EndFrame();
+	//GLimp_EndFrame();
 
 	backEnd.framePostProcessed = qfalse;
 	backEnd.projection2D = qfalse;

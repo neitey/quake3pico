@@ -337,9 +337,9 @@ static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *
     }
 
     // HACK: use in main menu medium float precision (to prevent issue with missing models textures)
-//    if (Cvar_Get("r_uiFullScreen", "1", 0)->integer)
-//        Q_strcat(dest, size, "precision mediump float;\n");
-//    else
+    if (Cvar_Get("r_uiFullScreen", "1", 0)->integer)
+        Q_strcat(dest, size, "precision mediump float;\n");
+    else
         Q_strcat(dest, size, "precision highp float;\n");
 
 	if(shaderType == GL_VERTEX_SHADER)

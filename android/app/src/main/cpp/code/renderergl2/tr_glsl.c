@@ -195,7 +195,7 @@ static void GLSL_ViewMatricesUniformBuffer(const float value[32]) {
 		{
 			//For now just set identity matrices
 			Mat4Identity(viewMatrices);
-			Mat4Identity(viewMatrices + (16 * sizeof(float)));
+			Mat4Identity(viewMatrices + 16);
 		}
 		else
 		{

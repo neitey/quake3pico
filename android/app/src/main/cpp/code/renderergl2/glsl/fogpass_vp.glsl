@@ -15,23 +15,14 @@ uniform vec4    u_FogDistance;
 uniform vec4    u_FogDepth;
 uniform float   u_FogEyeT;
 
+uniform mat4 u_ModelMatrix;
+
 #if defined(USE_DEFORM_VERTEXES)
 uniform int     u_DeformGen;
 uniform float   u_DeformParams[5];
 #endif
 
 uniform float   u_Time;
-
-// Uniforms
-layout(shared) uniform ViewMatrices
-		{
-				uniform highp mat4 u_ViewMatrices[NUM_VIEWS];
-		};
-layout(shared) uniform ProjectionMatrix
-		{
-				uniform highp mat4 u_ProjectionMatrix;
-		};
-uniform highp mat4 u_ModelMatrix;
 
 #if defined(USE_VERTEX_ANIMATION)
 uniform float   u_VertexLerp;
@@ -40,6 +31,16 @@ uniform mat4 u_BoneMatrix[MAX_GLSL_BONES];
 #endif
 
 uniform vec4  u_Color;
+
+// Uniforms
+layout(shared) uniform ViewMatrices
+{
+    uniform mat4 u_ViewMatrices[NUM_VIEWS];
+};
+layout(shared) uniform ProjectionMatrix
+{
+    uniform mat4 u_ProjectionMatrix;
+};
 
 varying float   var_Scale;
 

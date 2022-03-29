@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_local.h"
 
 #include "tr_dsa.h"
+#include "../vr/vr_base.h"
 
 
 extern const char *fallbackShader_bokeh_vp;
@@ -53,6 +54,8 @@ extern const char *fallbackShader_texturecolor_vp;
 extern const char *fallbackShader_texturecolor_fp;
 extern const char *fallbackShader_tonemap_vp;
 extern const char *fallbackShader_tonemap_fp;
+
+extern cvar_t *vr_hudDepth;
 
 typedef struct uniformInfo_s
 {
@@ -193,9 +196,16 @@ static void GLSL_ViewMatricesUniformBuffer(const float value[32]) {
 
 		if (i == ORTHO_PROJECTION)
 		{
+		    //don't want depth when in screen view
+            const auto depth = VR_useScreenLayer() ? 0 : (5-vr_hudDepth->integer) * 20;
+
 			//For now just set identity matrices
-			Mat4Identity(viewMatrices);
-			Mat4Identity(viewMatrices + 16);
+			vec3_t translate;
+			VectorSet(translate, depth, 0, 0);
+			Mat4Translation( translate, viewMatrices );
+
+			VectorSet(translate, -depth, 0, 0);
+			Mat4Translation( translate, viewMatrices + 16 );
 		}
 		else
 		{
@@ -327,9 +337,9 @@ static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *
     }
 
     // HACK: use in main menu medium float precision (to prevent issue with missing models textures)
-    if (Cvar_Get("r_uiFullScreen", "1", 0)->integer)
-        Q_strcat(dest, size, "precision mediump float;\n");
-    else
+//    if (Cvar_Get("r_uiFullScreen", "1", 0)->integer)
+//        Q_strcat(dest, size, "precision mediump float;\n");
+//    else
         Q_strcat(dest, size, "precision highp float;\n");
 
 	if(shaderType == GL_VERTEX_SHADER)
@@ -1652,40 +1662,16 @@ void GLSL_PrepareUniformBuffers(void)
         height = glConfig.vidHeight;
     }
 
-    static qboolean first = qtrue;
-    static float defaultProjection[16];
-    if (first)
-    {
-        first = qfalse;
-        memset(defaultProjection, 0, 16 * sizeof(float));
-    }
+    float orthoProjectionMatrix[16];
+    Mat4Ortho(0, width, height, 0, 0, 1, orthoProjectionMatrix);
 
-    static int vidWidth = 1;
-	static int vidHeight = 1;
-	if (vidWidth != width || vidHeight != height)
-	{
+    //ortho projection matrix
+    GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[ORTHO_PROJECTION],
+            orthoProjectionMatrix);
 
-		float orthoProjectionMatrix[16];
-		Mat4Ortho(0, vidWidth, vidHeight, 0, 0, 1, orthoProjectionMatrix);
-
-		//ortho projection matrix
-		GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[ORTHO_PROJECTION],
-				orthoProjectionMatrix);
-
-        vidWidth = width;
-        vidHeight = height;
-	}
-
-	//We only need to do the following if the default projection changes
-	if (memcmp(defaultProjection, tr.vrParms.projection, 16 * sizeof(float)) != 0)
-	{
-		//Take a copy of the default projection
-		memcpy(defaultProjection, tr.vrParms.projection, 16 * sizeof(float));
-
-		//unadjusted projection matrix
-		GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[NORMAL_PROJECTION],
-				tr.vrParms.projection);
-	}
+    //VR projection matrix
+    GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[NORMAL_PROJECTION],
+            tr.vrParms.projection);
 
 	//Set up the buffers that won't change this frame
 	GLSL_ViewMatricesUniformBuffer(tr.viewParms.world.eyeViewMatrix);
@@ -1704,7 +1690,6 @@ void GLSL_BindProgram(shaderProgram_t * program)
 
     if (GL_UseProgram(programObject))
         backEnd.pc.c_glslShaderBinds++;
-
 }
 
 static GLuint GLSL_CalculateProjection() {

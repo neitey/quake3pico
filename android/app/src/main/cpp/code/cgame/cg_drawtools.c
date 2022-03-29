@@ -60,12 +60,6 @@ void CG_AdjustFrom640( float *x, float *y, float *w, float *h ) {
 		float screenXScale = cgs.screenXScale / 2.75f;
 		float screenYScale = cgs.screenYScale / 2.25f;
 
-        const auto depth = (int)trap_Cvar_VariableValue( "vr_hudDepth" );
-		int xoffset = 120 - (depth * 20);
-		if (cg.stereoView == STEREO_RIGHT) {
-			xoffset *= -1;
-		}
-
 		*x *= screenXScale;
 		*y *= screenYScale;
 		if (hudflags & HUD_FLAGS_DRAWMODEL)
@@ -81,7 +75,7 @@ void CG_AdjustFrom640( float *x, float *y, float *w, float *h ) {
 			*h *= screenYScale;
 		}
 
-		*x += (cg.refdef.width - (640 * screenXScale)) / 2.0f + xoffset;
+		*x += (cg.refdef.width - (640 * screenXScale)) / 2.0f;
 		*y += (cg.refdef.height - (480 * screenYScale)) / 2.0f - trap_Cvar_VariableValue( "vr_hudYOffset" );
 	}
 }

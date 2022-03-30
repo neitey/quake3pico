@@ -20,7 +20,7 @@ uniform float    u_DeformParams[5];
 
 uniform float   u_Time;
 
-uniform mat4 u_ModelMatrix;
+uniform highp mat4 u_ModelMatrix;
 
 #if defined(USE_VERTEX_ANIMATION)
 uniform float   u_VertexLerp;
@@ -30,11 +30,11 @@ uniform mat4 u_BoneMatrix[MAX_GLSL_BONES];
 
 layout(shared) uniform ViewMatrices
 {
-    uniform mat4 u_ViewMatrices[NUM_VIEWS];
+    uniform highp mat4 u_ViewMatrices[NUM_VIEWS];
 };
 layout(shared) uniform ProjectionMatrix
 {
-    uniform mat4 u_ProjectionMatrix;
+    uniform highp mat4 u_ProjectionMatrix;
 };
 
 varying vec3    var_Position;

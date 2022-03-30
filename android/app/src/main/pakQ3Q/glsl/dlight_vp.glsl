@@ -12,16 +12,16 @@ uniform float  u_Time;
 
 uniform vec4   u_Color;
 
-uniform mat4 u_ModelMatrix;
+uniform highp mat4 u_ModelMatrix;
 
 // Uniforms
 layout(shared) uniform ViewMatrices
 {
-	uniform mat4 u_ViewMatrices[NUM_VIEWS];
+	uniform highp mat4 u_ViewMatrices[NUM_VIEWS];
 };
 layout(shared) uniform ProjectionMatrix
 {
-	uniform mat4 u_ProjectionMatrix;
+	uniform highp mat4 u_ProjectionMatrix;
 };
 
 varying vec2   var_Tex1;

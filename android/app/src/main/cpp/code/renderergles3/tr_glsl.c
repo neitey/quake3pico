@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "tr_dsa.h"
 #include "../vr/vr_base.h"
+#include "../vr/vr_clientinfo.h"
 
 
 extern const char *fallbackShader_bokeh_vp;
@@ -56,6 +57,7 @@ extern const char *fallbackShader_tonemap_vp;
 extern const char *fallbackShader_tonemap_fp;
 
 extern cvar_t *vr_hudDepth;
+extern vr_clientinfo_t vr;
 
 typedef struct uniformInfo_s
 {
@@ -197,7 +199,7 @@ static void GLSL_ViewMatricesUniformBuffer(const float value[32]) {
 		if (i == ORTHO_PROJECTION)
 		{
 		    //don't want depth when in screen view
-            const auto depth = VR_useScreenLayer() ? 0 : (5-vr_hudDepth->integer) * 20;
+            const auto depth = (VR_useScreenLayer() || vr.weapon_zoomed) ? 0 : (5-vr_hudDepth->integer) * 20;
 
 			//For now just set identity matrices
 			vec3_t translate;

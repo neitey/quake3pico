@@ -2,7 +2,7 @@
 
 /************************************************************************************
 
-Original file name  : XrCompositor_NativeActivity.c
+Original file name  : XrCompositor_NativeActivity.c and XrSpaceWarp.c
 
 Copyright : Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.
 
@@ -46,13 +46,26 @@ void ovrFramebuffer_Clear(ovrFramebuffer* frameBuffer) {
     frameBuffer->ColorSwapChainImage = NULL;
     frameBuffer->DepthBuffers = NULL;
     frameBuffer->FrameBuffers = NULL;
+
+    // AppSpaceWarp
+    frameBuffer->MotionVectorSwapChain.Handle = XR_NULL_HANDLE;
+    frameBuffer->MotionVectorSwapChain.Width = 0;
+    frameBuffer->MotionVectorSwapChain.Height = 0;
+    frameBuffer->MotionVectorSwapChainImage = NULL;
+    frameBuffer->MotionVectorDepthSwapChain.Handle = XR_NULL_HANDLE;
+    frameBuffer->MotionVectorDepthSwapChain.Width = 0;
+    frameBuffer->MotionVectorDepthSwapChain.Height = 0;
+    frameBuffer->MotionVectorDepthSwapChainImage = NULL;
+    frameBuffer->MotionVectorFrameBuffers = NULL;
 }
 
 bool ovrFramebuffer_Create(
         XrSession session,
         ovrFramebuffer* frameBuffer,
         const int width,
-        const int height) {
+        const int height,
+        const int motionVectorWidth,
+        const int motionVectorHeight) {
 
     frameBuffer->Width = width;
     frameBuffer->Height = height;
@@ -101,12 +114,12 @@ bool ovrFramebuffer_Create(
     frameBuffer->FrameBuffers =
             (GLuint*)malloc(frameBuffer->TextureSwapChainLength * sizeof(GLuint));
 
+    GLenum textureTarget = GL_TEXTURE_2D_ARRAY;
     for (uint32_t i = 0; i < frameBuffer->TextureSwapChainLength; i++) {
         // Create the color buffer texture.
         const GLuint colorTexture = frameBuffer->ColorSwapChainImage[i].image;
 
         GLfloat borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
-        GLenum textureTarget = GL_TEXTURE_2D_ARRAY;
         GL(glBindTexture(textureTarget, colorTexture));
         GL(glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor));
         GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
@@ -134,6 +147,129 @@ bool ovrFramebuffer_Create(
         }
     }
 
+    // AppSpaceWarp : initialize swapchains and frame buffers for motion vector pass
+    {
+        frameBuffer->MotionVectorWidth = motionVectorWidth;
+        frameBuffer->MotionVectorHeight = motionVectorHeight;
+
+        GLenum mvFormat = GL_RGBA16F;
+        GLenum mvDepthFormat = GL_DEPTH_COMPONENT24;
+        XrSwapchainCreateInfo swapChainCreateInfo;
+        memset(&swapChainCreateInfo, 0, sizeof(swapChainCreateInfo));
+        swapChainCreateInfo.type = XR_TYPE_SWAPCHAIN_CREATE_INFO;
+        swapChainCreateInfo.usageFlags =
+                XR_SWAPCHAIN_USAGE_SAMPLED_BIT | XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
+        swapChainCreateInfo.format = mvFormat;
+        swapChainCreateInfo.sampleCount = 1;
+        swapChainCreateInfo.width = frameBuffer->MotionVectorWidth;
+        swapChainCreateInfo.height = frameBuffer->MotionVectorHeight;
+        swapChainCreateInfo.faceCount = 1;
+        swapChainCreateInfo.arraySize = 1;
+        swapChainCreateInfo.mipCount = 1;
+
+        frameBuffer->MotionVectorSwapChain.Width = swapChainCreateInfo.width;
+        frameBuffer->MotionVectorSwapChain.Height = swapChainCreateInfo.height;
+
+        // Create the swapchain.
+        OXR(xrCreateSwapchain(
+                session, &swapChainCreateInfo, &frameBuffer->MotionVectorSwapChain.Handle));
+
+        // Get the number of swapchain images.
+        OXR(xrEnumerateSwapchainImages(
+                frameBuffer->MotionVectorSwapChain.Handle,
+                0,
+                &frameBuffer->TextureSwapChainLength,
+                NULL));
+        // Allocate the swapchain images array.
+        frameBuffer->MotionVectorSwapChainImage = (XrSwapchainImageOpenGLESKHR*)malloc(
+                frameBuffer->TextureSwapChainLength * sizeof(XrSwapchainImageOpenGLESKHR));
+
+        // Populate the swapchain image array.
+        for (uint32_t i = 0; i < frameBuffer->TextureSwapChainLength; i++) {
+            frameBuffer->MotionVectorSwapChainImage[i].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR;
+            frameBuffer->MotionVectorSwapChainImage[i].next = NULL;
+        }
+        OXR(xrEnumerateSwapchainImages(
+                frameBuffer->MotionVectorSwapChain.Handle,
+                frameBuffer->TextureSwapChainLength,
+                &frameBuffer->TextureSwapChainLength,
+                (XrSwapchainImageBaseHeader*)frameBuffer->MotionVectorSwapChainImage));
+
+        // Motion Vector depth construction
+        swapChainCreateInfo.usageFlags =
+                XR_SWAPCHAIN_USAGE_SAMPLED_BIT | XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        swapChainCreateInfo.format = mvDepthFormat;
+        OXR(xrCreateSwapchain(
+                session, &swapChainCreateInfo, &frameBuffer->MotionVectorDepthSwapChain.Handle));
+
+        // Get the number of swapchain images.
+        OXR(xrEnumerateSwapchainImages(
+                frameBuffer->MotionVectorDepthSwapChain.Handle,
+                0,
+                &frameBuffer->TextureSwapChainLength,
+                NULL));
+
+        // Allocate the swapchain images array.
+        frameBuffer->MotionVectorDepthSwapChainImage = (XrSwapchainImageOpenGLESKHR*)malloc(
+                frameBuffer->TextureSwapChainLength * sizeof(XrSwapchainImageOpenGLESKHR));
+
+        // Populate the swapchain image array.
+        for (uint32_t i = 0; i < frameBuffer->TextureSwapChainLength; i++) {
+            frameBuffer->MotionVectorDepthSwapChainImage[i].type =
+                    XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR;
+            frameBuffer->MotionVectorDepthSwapChainImage[i].next = NULL;
+        }
+        OXR(xrEnumerateSwapchainImages(
+                frameBuffer->MotionVectorDepthSwapChain.Handle,
+                frameBuffer->TextureSwapChainLength,
+                &frameBuffer->TextureSwapChainLength,
+                (XrSwapchainImageBaseHeader*)frameBuffer->MotionVectorDepthSwapChainImage));
+
+        frameBuffer->MotionVectorFrameBuffers =
+                (GLuint*)malloc(frameBuffer->TextureSwapChainLength * sizeof(GLuint));
+
+        for (uint32_t i = 0; i < frameBuffer->TextureSwapChainLength; i++) {
+            // Color buffer texture.
+            const GLuint motionVectorTexture = frameBuffer->MotionVectorSwapChainImage[i].image;
+            GL(glBindTexture(textureTarget, motionVectorTexture));
+            GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+            GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+            GL(glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            GL(glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            GL(glBindTexture(textureTarget, 0));
+
+            // depth buffer texture.
+            const GLuint motionVectorDepthTexture =
+                    frameBuffer->MotionVectorDepthSwapChainImage[i].image;
+            GL(glBindTexture(textureTarget, motionVectorDepthTexture));
+            GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+            GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+            GL(glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+            GL(glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+            GL(glBindTexture(textureTarget, 0));
+
+            // Create the frame buffer.
+            GL(glGenFramebuffers(1, &frameBuffer->MotionVectorFrameBuffers[i]));
+            GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->MotionVectorFrameBuffers[i]));
+            GL(glFramebufferTextureMultiviewOVR(
+                    GL_DRAW_FRAMEBUFFER,
+                    GL_DEPTH_ATTACHMENT,
+                    GL_TEXTURE_2D,
+                    motionVectorDepthTexture,
+                    0, 2));
+
+            GL(glFramebufferTextureMultiviewOVR(
+                    GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, motionVectorTexture, 0, 2));
+
+            GL(GLenum renderFramebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
+            GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+            if (renderFramebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
+                ALOGE("Incomplete frame buffer object: %d", renderFramebufferStatus);
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -146,49 +282,119 @@ void ovrFramebuffer_Destroy(ovrFramebuffer* frameBuffer) {
     free(frameBuffer->DepthBuffers);
     free(frameBuffer->FrameBuffers);
 
+    // AppSpaceWarp Clear render resources
+    GL(glDeleteFramebuffers(
+            frameBuffer->TextureSwapChainLength, frameBuffer->MotionVectorFrameBuffers));
+    OXR(xrDestroySwapchain(frameBuffer->MotionVectorSwapChain.Handle));
+    free(frameBuffer->MotionVectorSwapChainImage);
+    OXR(xrDestroySwapchain(frameBuffer->MotionVectorDepthSwapChain.Handle));
+    free(frameBuffer->MotionVectorDepthSwapChainImage);
+    free(frameBuffer->MotionVectorFrameBuffers);
+
     ovrFramebuffer_Clear(frameBuffer);
 }
 
-void ovrFramebuffer_SetCurrent(ovrFramebuffer* frameBuffer) {
-    GL(glBindFramebuffer(
-            GL_DRAW_FRAMEBUFFER, frameBuffer->FrameBuffers[frameBuffer->TextureSwapChainIndex]));
+void ovrFramebuffer_SetCurrent(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass) {
+    // AppSpaceWarp
+    if (isMotionVectorPass) {
+        GL(glBindFramebuffer(
+                GL_DRAW_FRAMEBUFFER,
+                frameBuffer->MotionVectorFrameBuffers[frameBuffer->TextureSwapChainIndex]));
+    } else {
+        GL(glBindFramebuffer(
+                GL_DRAW_FRAMEBUFFER, frameBuffer->FrameBuffers[frameBuffer->TextureSwapChainIndex]));
+    }
 }
 
 void ovrFramebuffer_SetNone() {
     GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
 }
 
-void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer) {
-    // Discard the depth buffer, so the tiler won't need to write it back out to memory.
-    const GLenum depthAttachment[1] = {GL_DEPTH_ATTACHMENT};
-    glInvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, 1, depthAttachment);
-}
-
-void ovrFramebuffer_Acquire(ovrFramebuffer* frameBuffer) {
-    // Acquire the swapchain image
-    XrSwapchainImageAcquireInfo acquireInfo = {XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO, NULL};
-    OXR(xrAcquireSwapchainImage(
-            frameBuffer->ColorSwapChain.Handle, &acquireInfo, &frameBuffer->TextureSwapChainIndex));
-
-    XrSwapchainImageWaitInfo waitInfo;
-    waitInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
-    waitInfo.next = NULL;
-    waitInfo.timeout = 1000; /* timeout in nanoseconds */
-    XrResult res = xrWaitSwapchainImage(frameBuffer->ColorSwapChain.Handle, &waitInfo);
-    int i = 0;
-    while (res != XR_SUCCESS) {
-        res = xrWaitSwapchainImage(frameBuffer->ColorSwapChain.Handle, &waitInfo);
-        i++;
-        ALOGV(
-                " Retry xrWaitSwapchainImage %d times due to XR_TIMEOUT_EXPIRED (duration %f micro seconds)",
-                i,
-                waitInfo.timeout * (1E-9));
+void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass) {
+    if (isMotionVectorPass) {
+        // AppSpaceWarp Both depth and color buffer will be resolved for motion vector pass
+    } else {
+        // Discard the depth buffer, so the tiler won't need to write it back out to memory.
+        const GLenum depthAttachment[1] = {GL_DEPTH_ATTACHMENT};
+        glInvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, 1, depthAttachment);
+        // We now let the resolve happen implicitly.
     }
 }
 
-void ovrFramebuffer_Release(ovrFramebuffer* frameBuffer) {
+void ovrFramebuffer_Acquire(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass) {
+    // Acquire the swapchain image
+    XrSwapchainImageAcquireInfo acquireInfo = {XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO, NULL};
+
+    if (isMotionVectorPass) {
+        // AppSpaceWarp Need wait both MotionVectorSwapChain and MotionVectorDepthSwapChain are
+        // ready
+        XrSwapchainImageWaitInfo waitInfo;
+        waitInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
+        waitInfo.next = NULL;
+        waitInfo.timeout = 1000; /* timeout in nanoseconds */
+
+        OXR(xrAcquireSwapchainImage(
+                frameBuffer->MotionVectorSwapChain.Handle,
+                &acquireInfo,
+                &frameBuffer->TextureSwapChainIndex));
+
+        XrResult res = xrWaitSwapchainImage(frameBuffer->MotionVectorSwapChain.Handle, &waitInfo);
+        int i = 0;
+        while (res == XR_TIMEOUT_EXPIRED) {
+            res = xrWaitSwapchainImage(frameBuffer->MotionVectorSwapChain.Handle, &waitInfo);
+            i++;
+            ALOGV(
+                    " Retry xrWaitSwapchainImage %d times due to XR_TIMEOUT_EXPIRED (duration %f seconds)",
+                    i,
+                    waitInfo.timeout * (1E-9));
+        }
+
+        OXR(xrAcquireSwapchainImage(
+                frameBuffer->MotionVectorDepthSwapChain.Handle,
+                &acquireInfo,
+                &frameBuffer->TextureSwapChainIndex));
+
+        res = xrWaitSwapchainImage(frameBuffer->MotionVectorDepthSwapChain.Handle, &waitInfo);
+        i = 0;
+        while (res == XR_TIMEOUT_EXPIRED) {
+            res = xrWaitSwapchainImage(frameBuffer->MotionVectorDepthSwapChain.Handle, &waitInfo);
+            i++;
+            ALOGV(
+                    " Retry xrWaitSwapchainImage %d times due to XR_TIMEOUT_EXPIRED (duration %f microseconds)",
+                    i,
+                    waitInfo.timeout * (1E-9));
+        }
+    } else {
+        OXR(xrAcquireSwapchainImage(
+                frameBuffer->ColorSwapChain.Handle, &acquireInfo, &frameBuffer->TextureSwapChainIndex));
+
+        XrSwapchainImageWaitInfo waitInfo;
+        waitInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
+        waitInfo.next = NULL;
+        waitInfo.timeout = 1000; /* timeout in nanoseconds */
+        XrResult res = xrWaitSwapchainImage(frameBuffer->ColorSwapChain.Handle, &waitInfo);
+        int i = 0;
+        while (res == XR_TIMEOUT_EXPIRED) {
+            res = xrWaitSwapchainImage(frameBuffer->ColorSwapChain.Handle, &waitInfo);
+            i++;
+            ALOGV(
+                    " Retry xrWaitSwapchainImage %d times due to XR_TIMEOUT_EXPIRED (duration %f microseconds)",
+                    i,
+                    waitInfo.timeout * (1E-9));
+        }
+    }
+}
+
+void ovrFramebuffer_Release(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass) {
     XrSwapchainImageReleaseInfo releaseInfo = {XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO, NULL};
-    OXR(xrReleaseSwapchainImage(frameBuffer->ColorSwapChain.Handle, &releaseInfo));
+
+    // AppSpaceWarp
+    if (isMotionVectorPass) {
+        OXR(xrReleaseSwapchainImage(frameBuffer->MotionVectorSwapChain.Handle, &releaseInfo));
+        OXR(xrReleaseSwapchainImage(frameBuffer->MotionVectorDepthSwapChain.Handle, &releaseInfo));
+    } else {
+        OXR(xrReleaseSwapchainImage(frameBuffer->ColorSwapChain.Handle, &releaseInfo));
+    }
 }
 
 /*
@@ -207,13 +413,17 @@ void ovrRenderer_Create(
         XrSession session,
         ovrRenderer* renderer,
         int suggestedEyeTextureWidth,
-        int suggestedEyeTextureHeight) {
+        int suggestedEyeTextureHeight,
+        int recommendedMotionVectorWidth,
+        int recommendedMotionVectorHeight) {
     // Create the frame buffers.
     ovrFramebuffer_Create(
             session,
             &renderer->FrameBuffer,
             suggestedEyeTextureWidth,
-            suggestedEyeTextureHeight);
+            suggestedEyeTextureHeight,
+            recommendedMotionVectorWidth,
+            recommendedMotionVectorHeight);
 }
 
 void ovrRenderer_Destroy(ovrRenderer* renderer) {

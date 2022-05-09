@@ -291,11 +291,25 @@ void VR_InitRenderer( engine_t* engine ) {
 
     projections = (XrView*)(malloc(ovrMaxNumEyes * sizeof(XrView)));
 
+    // AppSpaceWarp Get recommended motion vector resolution, we don't recommend to use higher
+    // motion vector resolution than recommended It won't give you extra quality improvement even it
+    // make your motion vector pass more expensive.
+    XrSystemSpaceWarpPropertiesFB spaceWarpProperties = {};
+    spaceWarpProperties.type = XR_TYPE_SYSTEM_SPACE_WARP_PROPERTIES_FB;
+
+    XrSystemProperties systemProperties = {};
+    systemProperties.type = XR_TYPE_SYSTEM_PROPERTIES;
+    systemProperties.next = &spaceWarpProperties;
+
+    OXR(xrGetSystemProperties(engine->appState.Instance, engine->appState.SystemId, &systemProperties));
+
     ovrRenderer_Create(
             engine->appState.Session,
             &engine->appState.Renderer,
             engine->appState.ViewConfigurationView[0].recommendedImageRectWidth,
-            engine->appState.ViewConfigurationView[0].recommendedImageRectHeight);
+            engine->appState.ViewConfigurationView[0].recommendedImageRectHeight,
+            spaceWarpProperties.recommendedMotionVectorImageRectWidth,
+            spaceWarpProperties.recommendedMotionVectorImageRectHeight);
 }
 
 void VR_DestroyRenderer( engine_t* engine )
@@ -443,8 +457,8 @@ void VR_DrawFrame( engine_t* engine ) {
     int glFramebuffer = engine->appState.Renderer.FrameBuffer.FrameBuffers[swapchainIndex];
     re.SetVRHeadsetParms(projectionMatrix.M, monoVRMatrix.M, glFramebuffer);
 
-    ovrFramebuffer_Acquire(frameBuffer);
-    ovrFramebuffer_SetCurrent(frameBuffer);
+    ovrFramebuffer_Acquire(frameBuffer, qfalse);
+    ovrFramebuffer_SetCurrent(frameBuffer, qfalse);
     VR_ClearFrameBuffer(frameBuffer->ColorSwapChain.Width, frameBuffer->ColorSwapChain.Height);
     Com_Frame();
 
@@ -454,8 +468,8 @@ void VR_DrawFrame( engine_t* engine ) {
     glClear(GL_COLOR_BUFFER_BIT);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-    ovrFramebuffer_Resolve(frameBuffer);
-    ovrFramebuffer_Release(frameBuffer);
+    ovrFramebuffer_Resolve(frameBuffer, qfalse);
+    ovrFramebuffer_Release(frameBuffer, qfalse);
     ovrFramebuffer_SetNone();
 
     XrCompositionLayerProjectionView projection_layer_elements[2] = {};

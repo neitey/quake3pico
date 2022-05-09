@@ -18,7 +18,8 @@ const char* const requiredExtensionNames[] = {
         XR_EXT_PERFORMANCE_SETTINGS_EXTENSION_NAME,
         XR_KHR_ANDROID_THREAD_SETTINGS_EXTENSION_NAME,
         XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME,
-        XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME};
+        XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME,
+        XR_FB_SPACE_WARP_EXTENSION_NAME};
 const uint32_t numRequiredExtensions =
         sizeof(requiredExtensionNames) / sizeof(requiredExtensionNames[0]);
 

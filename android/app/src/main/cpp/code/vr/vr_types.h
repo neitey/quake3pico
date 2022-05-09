@@ -59,6 +59,17 @@ typedef struct {
     XrSwapchainImageOpenGLESKHR* ColorSwapChainImage;
     GLuint* DepthBuffers;
     GLuint* FrameBuffers;
+
+    // AppSpaceWarp :  Motion vector pass will render into both color attachmment
+    // (MotionVectorSwapChain / MotionVectorSwapChainImage) and depth attachment
+    // (MotionVectorDepthSwapChain / MotionVectorDepthSwapChainImage)
+    int MotionVectorWidth;
+    int MotionVectorHeight;
+    ovrSwapChain MotionVectorSwapChain;
+    XrSwapchainImageOpenGLESKHR* MotionVectorSwapChainImage;
+    ovrSwapChain MotionVectorDepthSwapChain;
+    XrSwapchainImageOpenGLESKHR* MotionVectorDepthSwapChainImage;
+    GLuint* MotionVectorFrameBuffers;
 } ovrFramebuffer;
 
 typedef struct {
@@ -160,17 +171,19 @@ void ovrApp_Clear(ovrApp* app);
 void ovrApp_Destroy(ovrApp* app);
 GLboolean ovrApp_HandleXrEvents(ovrApp* app);
 
-void ovrFramebuffer_Acquire(ovrFramebuffer* frameBuffer);
-void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer);
-void ovrFramebuffer_Release(ovrFramebuffer* frameBuffer);
-void ovrFramebuffer_SetCurrent(ovrFramebuffer* frameBuffer);
+void ovrFramebuffer_Acquire(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass);
+void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass);
+void ovrFramebuffer_Release(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass);
+void ovrFramebuffer_SetCurrent(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass);
 void ovrFramebuffer_SetNone();
 
 void ovrRenderer_Create(
 		XrSession session,
 		ovrRenderer* renderer,
 		int suggestedEyeTextureWidth,
-		int suggestedEyeTextureHeight);
+		int suggestedEyeTextureHeight,
+        int recommendedMotionVectorWidth,
+        int recommendedMotionVectorHeight);
 void ovrRenderer_Destroy(ovrRenderer* renderer);
 
 void ovrTrackedController_Clear(ovrTrackedController* controller);

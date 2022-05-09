@@ -21,6 +21,7 @@
 
 extern vr_clientinfo_t vr;
 extern cvar_t *vr_heightAdjust;
+extern cvar_t *vr_spacewarp;
 
 XrView* projections;
 GLboolean stageSupported = GL_FALSE;
@@ -473,8 +474,11 @@ void VR_DrawFrame( engine_t* engine ) {
     ovrFramebuffer_SetNone();
 
     XrCompositionLayerProjectionView projection_layer_elements[2] = {};
+    XrCompositionLayerSpaceWarpInfoFB proj_spacewarp_views[2] = {};
     if (!VR_useScreenLayer() && !(cl.snap.ps.pm_flags & PMF_FOLLOW && vr.follow_mode == VRFM_FIRSTPERSON)) {
         vr.menuYaw = vr.hmdorientation[YAW];
+
+        //TODO: render motion vector frame
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
             ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
@@ -491,6 +495,38 @@ void VR_DrawFrame( engine_t* engine ) {
             projection_layer_elements[eye].subImage.imageRect.extent.width = frameBuffer->ColorSwapChain.Width;
             projection_layer_elements[eye].subImage.imageRect.extent.height = frameBuffer->ColorSwapChain.Height;
             projection_layer_elements[eye].subImage.imageArrayIndex = eye;
+
+            if (vr_spacewarp->integer) {
+                projection_layer_elements[eye].next = &proj_spacewarp_views[eye];
+                proj_spacewarp_views[eye].type = XR_TYPE_COMPOSITION_LAYER_SPACE_WARP_INFO_FB;
+                proj_spacewarp_views[eye].next = NULL;
+                proj_spacewarp_views[eye].layerFlags = 0;
+
+                proj_spacewarp_views[eye].motionVectorSubImage.swapchain = frameBuffer->MotionVectorSwapChain.Handle;
+                proj_spacewarp_views[eye].motionVectorSubImage.imageRect.offset.x = 0;
+                proj_spacewarp_views[eye].motionVectorSubImage.imageRect.offset.y = 0;
+                proj_spacewarp_views[eye].motionVectorSubImage.imageRect.extent.width = frameBuffer->MotionVectorSwapChain.Width;
+                proj_spacewarp_views[eye].motionVectorSubImage.imageRect.extent.height = frameBuffer->MotionVectorSwapChain.Height;
+                proj_spacewarp_views[eye].motionVectorSubImage.imageArrayIndex = eye;
+                proj_spacewarp_views[eye].depthSubImage.swapchain = frameBuffer->MotionVectorDepthSwapChain.Handle;
+                proj_spacewarp_views[eye].nearZ = 0.1f;
+                proj_spacewarp_views[eye].farZ = INFINITY;
+                proj_spacewarp_views[eye].depthSubImage.imageRect.offset.x = 0;
+                proj_spacewarp_views[eye].depthSubImage.imageRect.offset.y = 0;
+                proj_spacewarp_views[eye].depthSubImage.imageRect.extent.width = frameBuffer->MotionVectorDepthSwapChain.Width;
+                proj_spacewarp_views[eye].depthSubImage.imageRect.extent.height = frameBuffer->MotionVectorDepthSwapChain.Height;
+                proj_spacewarp_views[eye].depthSubImage.imageArrayIndex = eye;
+
+                //TODO: implement delta pose
+                //XrPosef PrevFrameXrSpacePoseInWorld = prevFrameSceneMatrices.XrSpacePoseInWorld;
+                //XrPosef InvPrevFrameXrSpacePoseInWorld = XrPosef_Inverse(PrevFrameXrSpacePoseInWorld);
+                //XrPosef XrSpacePoseInWorld = sceneMatrices.XrSpacePoseInWorld;
+                //proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(InvPrevFrameXrSpacePoseInWorld, XrSpacePoseInWorld);
+                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Identity();
+
+                proj_spacewarp_views[eye].minDepth = 0.0f;
+                proj_spacewarp_views[eye].maxDepth = 1.0f;
+            }
         }
 
         XrCompositionLayerProjection projection_layer = {};

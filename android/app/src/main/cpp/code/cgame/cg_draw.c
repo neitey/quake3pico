@@ -2963,7 +2963,10 @@ void CG_DrawActive( void ) {
 			trap_R_HUDBufferStart(qtrue);
 
 			// draw status bar and other floating elements
-			CG_DrawHUD2D();
+			if ((int)trap_Cvar_VariableValue( "vr_spaceWarp" ) == 0)
+			{
+				CG_DrawHUD2D();	//TODO: move rendering HUD into OpenXR render layer
+			}
 
 			trap_R_HUDBufferEnd();
 

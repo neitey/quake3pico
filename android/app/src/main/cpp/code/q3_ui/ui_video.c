@@ -249,6 +249,7 @@ GRAPHICS OPTIONS MENU
 #define ID_PLAYERSHADOW	109
 #define ID_GAMMA		110
 #define ID_HIGHQUALITYSKY	111
+#define ID_SPACEWARP		112
 
 #define	NUM_REFRESHRATE	5
 #define NUM_SHADOWS 3
@@ -276,6 +277,7 @@ typedef struct {
 	menulist_s		playershadow;
 	menuslider_s	gamma;
 	menuradiobutton_s	highqualitysky;
+	menuradiobutton_s	spacewarp;
 
 	menubitmap_s	apply;
 	menubitmap_s	back;
@@ -292,6 +294,7 @@ typedef struct
 	int playershadow;
 	float gamma;
 	int highqualitysky;
+	int spacewarp;
 } InitialVideoOptions_s;
 
 static InitialVideoOptions_s	s_ivo;
@@ -313,6 +316,7 @@ static void GraphicsOptions_GetInitialVideo( void )
 	s_ivo.playershadow	= s_graphicsoptions.playershadow.curvalue;
 	s_ivo.gamma       = s_graphicsoptions.gamma.curvalue;
 	s_ivo.highqualitysky = s_graphicsoptions.highqualitysky.curvalue;
+	s_ivo.spacewarp = s_graphicsoptions.spacewarp.curvalue;
 }
 
 /*
@@ -455,6 +459,10 @@ static void GraphicsOptions_Event( void* ptr, int event ) {
 		trap_Cvar_SetValue( "r_fastsky", !s_graphicsoptions.highqualitysky.curvalue );
 		break;
 
+	case ID_SPACEWARP:
+		trap_Cvar_SetValue( "vr_spaceWarp", s_graphicsoptions.spacewarp.curvalue );
+		break;
+
 	case ID_DRIVERINFO:
 		UI_DriverInfo_Menu();
 		break;
@@ -580,6 +588,7 @@ static void GraphicsOptions_SetMenuItems( void )
 	s_graphicsoptions.railgun.curvalue	= trap_Cvar_VariableValue( "cg_oldRail" );
 	s_graphicsoptions.gamma.curvalue			= trap_Cvar_VariableValue( "r_gamma" );
 	s_graphicsoptions.highqualitysky.curvalue	= trap_Cvar_VariableValue( "r_fastsky" ) == 0;
+	s_graphicsoptions.spacewarp.curvalue	= trap_Cvar_VariableValue( "vr_spaceWarp" );
 }
 
 /*
@@ -694,7 +703,7 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.network.style				= UI_RIGHT;
 	s_graphicsoptions.network.color				= color_red;
 
-	y = 254 - 5 * (BIGCHAR_HEIGHT + 2);
+	y = 254 - 6 * (BIGCHAR_HEIGHT + 2);
 
 	// references "vr_refreshrate"
 	s_graphicsoptions.refreshrate.generic.type		= MTYPE_SPINCONTROL;
@@ -793,6 +802,16 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.highqualitysky.generic.y			= y;
 	s_graphicsoptions.highqualitysky.generic.callback = GraphicsOptions_Event;
 	s_graphicsoptions.highqualitysky.generic.id       = ID_HIGHQUALITYSKY;
+	y += BIGCHAR_HEIGHT+2;
+
+	// references/modifies "r_fastsky"
+	s_graphicsoptions.spacewarp.generic.type     = MTYPE_RADIOBUTTON;
+	s_graphicsoptions.spacewarp.generic.name	  = "Space Warp:";
+	s_graphicsoptions.spacewarp.generic.flags	  = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
+	s_graphicsoptions.spacewarp.generic.x			= 400;
+	s_graphicsoptions.spacewarp.generic.y			= y;
+	s_graphicsoptions.spacewarp.generic.callback = GraphicsOptions_Event;
+	s_graphicsoptions.spacewarp.generic.id       = ID_SPACEWARP;
 	y += 2*BIGCHAR_HEIGHT;
 
 	s_graphicsoptions.driverinfo.generic.type     = MTYPE_PTEXT;
@@ -843,6 +862,7 @@ void GraphicsOptions_MenuInit( void )
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.geometry );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.tq );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.highqualitysky );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.spacewarp );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.driverinfo );
 
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.back );

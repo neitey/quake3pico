@@ -764,7 +764,9 @@ int main( int argc, char **argv )
 
 	while( 1 )
 	{
-		Com_Frame( );
+		Com_PreFrame( );
+		IN_Frame( );
+		Com_PostFrame( );
 	}
 
 	return 0;

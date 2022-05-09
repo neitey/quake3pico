@@ -348,6 +348,50 @@ void VR_ClearFrameBuffer( int width, int height)
     glDisable( GL_SCISSOR_TEST );
 }
 
+void VR_RenderScene( engine_t* engine, XrFovf fov, qboolean motionVector ) {
+
+    // Projection used for drawing HUD models etc
+    float hudScale = M_PI * 15.0f / 180.0f;
+    const ovrMatrix4f monoVRMatrix = ovrMatrix4f_CreateProjectionFov(
+            -hudScale, hudScale, hudScale, -hudScale, 1.0f, 0.0f );
+    const ovrMatrix4f projectionMatrix = ovrMatrix4f_CreateProjectionFov(
+            fov.angleLeft / vr.weapon_zoomLevel,
+            fov.angleRight / vr.weapon_zoomLevel,
+            fov.angleUp / vr.weapon_zoomLevel,
+            fov.angleDown / vr.weapon_zoomLevel,
+            1.0f, 0.0f );
+
+    // Get Framebuffer
+    ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
+    int swapchainIndex = frameBuffer->TextureSwapChainIndex;
+    int glFramebuffer = frameBuffer->FrameBuffers[swapchainIndex];
+    int width = frameBuffer->ColorSwapChain.Width;
+    int height = frameBuffer->ColorSwapChain.Height;
+    if (motionVector) {
+        glFramebuffer = frameBuffer->MotionVectorFrameBuffers[swapchainIndex];
+        width = frameBuffer->MotionVectorSwapChain.Width;
+        height = frameBuffer->MotionVectorSwapChain.Height;
+    }
+    re.SetVRHeadsetParms(projectionMatrix.M, monoVRMatrix.M, glFramebuffer);
+
+    // Draw scene
+    ovrFramebuffer_Acquire(frameBuffer, motionVector);
+    ovrFramebuffer_SetCurrent(frameBuffer, motionVector);
+    VR_ClearFrameBuffer(width, height);
+    IN_Frame();
+
+    // Clear the alpha channel, other way OpenXR would not transfer the framebuffer fully
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+    // Release framebuffer
+    ovrFramebuffer_Resolve(frameBuffer, motionVector);
+    ovrFramebuffer_Release(frameBuffer, motionVector);
+    ovrFramebuffer_SetNone();
+}
+
 void VR_DrawFrame( engine_t* engine ) {
 	if (vr.weapon_zoomed) {
 		vr.weapon_zoomLevel += 0.05;
@@ -398,6 +442,7 @@ void VR_DrawFrame( engine_t* engine ) {
     beginFrameDesc.type = XR_TYPE_FRAME_BEGIN_INFO;
     beginFrameDesc.next = NULL;
     OXR(xrBeginFrame(engine->appState.Session, &beginFrameDesc));
+    Com_PreFrame();
 
     // Update HMD and controllers
     XrPosef xfStageFromHead = IN_VRUpdateHMD( frameState.predictedDisplayTime );
@@ -439,46 +484,20 @@ void VR_DrawFrame( engine_t* engine ) {
     vr.fov_x = (fabs(fov.angleLeft) + fabs(fov.angleRight)) * 180.0f / M_PI;
     vr.fov_y = (fabs(fov.angleUp) + fabs(fov.angleDown)) * 180.0f / M_PI;
 
-    //Projection used for drawing HUD models etc
-    float hudScale = M_PI * 15.0f / 180.0f;
-    const ovrMatrix4f monoVRMatrix = ovrMatrix4f_CreateProjectionFov(
-            -hudScale, hudScale, hudScale, -hudScale, 1.0f, 0.0f );
-    const ovrMatrix4f projectionMatrix = ovrMatrix4f_CreateProjectionFov(
-            fov.angleLeft / vr.weapon_zoomLevel,
-            fov.angleRight / vr.weapon_zoomLevel,
-            fov.angleUp / vr.weapon_zoomLevel,
-            fov.angleDown / vr.weapon_zoomLevel,
-            1.0f, 0.0f );
-
     engine->appState.LayerCount = 0;
     memset(engine->appState.Layers, 0, sizeof(ovrCompositorLayer_Union) * ovrMaxLayerCount);
 
-    ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
-    int swapchainIndex = engine->appState.Renderer.FrameBuffer.TextureSwapChainIndex;
-    int glFramebuffer = engine->appState.Renderer.FrameBuffer.FrameBuffers[swapchainIndex];
-    re.SetVRHeadsetParms(projectionMatrix.M, monoVRMatrix.M, glFramebuffer);
-
-    ovrFramebuffer_Acquire(frameBuffer, qfalse);
-    ovrFramebuffer_SetCurrent(frameBuffer, qfalse);
-    VR_ClearFrameBuffer(frameBuffer->ColorSwapChain.Width, frameBuffer->ColorSwapChain.Height);
-    Com_Frame();
-
-    // Clear the alpha channel, other way OpenXR would not transfer the framebuffer fully
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-    ovrFramebuffer_Resolve(frameBuffer, qfalse);
-    ovrFramebuffer_Release(frameBuffer, qfalse);
-    ovrFramebuffer_SetNone();
+    VR_RenderScene( engine, fov, qfalse );
 
     XrCompositionLayerProjectionView projection_layer_elements[2] = {};
     XrCompositionLayerSpaceWarpInfoFB proj_spacewarp_views[2] = {};
     if (!VR_useScreenLayer() && !(cl.snap.ps.pm_flags & PMF_FOLLOW && vr.follow_mode == VRFM_FIRSTPERSON)) {
         vr.menuYaw = vr.hmdorientation[YAW];
 
-        //TODO: render motion vector frame
+        if (vr_spacewarp->integer) {
+            //TODO: force motion vector shader
+            VR_RenderScene( engine, fov, qtrue );
+        }
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
             ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
@@ -576,6 +595,8 @@ void VR_DrawFrame( engine_t* engine ) {
         layers[i] = (const XrCompositionLayerBaseHeader*)&engine->appState.Layers[i];
     }
 
+    Com_PostFrame();
+
     XrFrameEndInfo endFrameInfo = {};
     endFrameInfo.type = XR_TYPE_FRAME_END_INFO;
     endFrameInfo.displayTime = frameState.predictedDisplayTime;
@@ -584,6 +605,7 @@ void VR_DrawFrame( engine_t* engine ) {
     endFrameInfo.layers = layers;
 
     OXR(xrEndFrame(engine->appState.Session, &endFrameInfo));
+    ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
     frameBuffer->TextureSwapChainIndex++;
     frameBuffer->TextureSwapChainIndex %= frameBuffer->TextureSwapChainLength;
 }

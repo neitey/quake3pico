@@ -3061,22 +3061,24 @@ int Com_TimeVal(int minMsec)
 	return timeVal;
 }
 
+int msec, minMsec;
+int timeVal, timeValSV;
+static int lastTime, bias;
+
+int timeBeforeFirstEvents;
+int timeBeforeServer;
+int timeBeforeEvents;
+int timeBeforeClient;
+int timeAfter;
+
 /*
 =================
-Com_Frame
+Com_PreFrame
 =================
 */
-void Com_Frame( void ) {
+void Com_PreFrame( void ) {
 
-	int		msec, minMsec;
-	int		timeVal, timeValSV;
-	static int	lastTime = 0, bias = 0;
- 
-	int		timeBeforeFirstEvents;
-	int		timeBeforeServer;
-	int		timeBeforeEvents;
-	int		timeBeforeClient;
-	int		timeAfter;
+	lastTime = 0, bias = 0;
   
 
 	if ( setjmp (abortframe) ) {
@@ -3152,8 +3154,14 @@ void Com_Frame( void ) {
 		else
 			NET_Sleep(timeVal - 1);
 	} while(Com_TimeVal(minMsec));
-	
-	IN_Frame();
+}
+
+/*
+=================
+Com_PostFrame
+=================
+*/
+void Com_PostFrame( void ) {
 
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();

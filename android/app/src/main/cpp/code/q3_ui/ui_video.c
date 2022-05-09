@@ -250,7 +250,7 @@ GRAPHICS OPTIONS MENU
 #define ID_GAMMA		110
 #define ID_HIGHQUALITYSKY	111
 
-#define	NUM_REFRESHRATE	4
+#define	NUM_REFRESHRATE	5
 #define NUM_SHADOWS 3
 #define NUM_RAILGUN 2
 
@@ -401,6 +401,9 @@ static void GraphicsOptions_Event( void* ptr, int event ) {
 				case 3:
 					refresh = 90;
 					break;
+				case 4:
+					refresh = 120;
+					break;
 				}
 			trap_Cvar_SetValue("vr_refreshrate", refresh);
 		}
@@ -542,6 +545,9 @@ static void GraphicsOptions_SetMenuItems( void )
 		case 90:
 			s_graphicsoptions.refreshrate.curvalue = 3;
 			break;
+		case 120:
+			s_graphicsoptions.refreshrate.curvalue = 4;
+			break;
 	}
 
 	switch ( (int) trap_Cvar_VariableValue( "cg_shadows" ) )
@@ -605,6 +611,7 @@ void GraphicsOptions_MenuInit( void )
 		"72 (Recommended)",
 		"80",
 		"90",
+		"120 (Experimental)",
 		NULL
 	};
 

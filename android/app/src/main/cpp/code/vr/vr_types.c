@@ -121,7 +121,7 @@ bool ovrFramebuffer_Create(
 
         GLfloat borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
         GL(glBindTexture(textureTarget, colorTexture));
-        GL(glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor));
+        GL(glTexParameterfv(textureTarget, GL_TEXTURE_BORDER_COLOR, borderColor));
         GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
         GL(glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
@@ -164,7 +164,7 @@ bool ovrFramebuffer_Create(
         swapChainCreateInfo.width = frameBuffer->MotionVectorWidth;
         swapChainCreateInfo.height = frameBuffer->MotionVectorHeight;
         swapChainCreateInfo.faceCount = 1;
-        swapChainCreateInfo.arraySize = 1;
+        swapChainCreateInfo.arraySize = 2;
         swapChainCreateInfo.mipCount = 1;
 
         frameBuffer->MotionVectorSwapChain.Width = swapChainCreateInfo.width;
@@ -254,7 +254,7 @@ bool ovrFramebuffer_Create(
             GL(glFramebufferTextureMultiviewOVR(
                     GL_DRAW_FRAMEBUFFER,
                     GL_DEPTH_ATTACHMENT,
-                    GL_TEXTURE_2D,
+                    textureTarget,
                     motionVectorDepthTexture,
                     0, 2));
 

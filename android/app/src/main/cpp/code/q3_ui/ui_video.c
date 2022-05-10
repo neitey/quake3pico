@@ -804,7 +804,7 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.highqualitysky.generic.id       = ID_HIGHQUALITYSKY;
 	y += BIGCHAR_HEIGHT+2;
 
-	// references/modifies "r_fastsky"
+	// references/modifies "vr_spaceWarp"
 	s_graphicsoptions.spacewarp.generic.type     = MTYPE_RADIOBUTTON;
 	s_graphicsoptions.spacewarp.generic.name	  = "Space Warp:";
 	s_graphicsoptions.spacewarp.generic.flags	  = QMF_PULSEIFFOCUS|QMF_SMALLFONT;

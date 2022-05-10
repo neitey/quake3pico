@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "q_shared.h"
 #include "qcommon.h"
+#include "../client/client.h"
 #include <setjmp.h>
 #ifndef _WIN32
 #include <netinet/in.h>
@@ -3154,18 +3155,12 @@ void Com_PreFrame( void ) {
 		else
 			NET_Sleep(timeVal - 1);
 	} while(Com_TimeVal(minMsec));
-}
 
-/*
-=================
-Com_PostFrame
-=================
-*/
-void Com_PostFrame( void ) {
+	IN_Frame();
 
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();
-	
+
 	msec = com_frameTime - lastTime;
 
 	Cbuf_Execute ();
@@ -3225,6 +3220,23 @@ void Com_PostFrame( void ) {
 	}
 
 	CL_Frame( msec );
+}
+
+/*
+=================
+Com_RenderFrame
+=================
+*/
+void Com_RenderFrame( void ) {
+    SCR_UpdateScreen();
+}
+
+/*
+=================
+Com_PostFrame
+=================
+*/
+void Com_PostFrame( void ) {
 
 	if ( com_speeds->integer ) {
 		timeAfter = Sys_Milliseconds ();

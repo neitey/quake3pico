@@ -3047,7 +3047,7 @@ void CL_Frame ( int msec ) {
 	CL_SetCGameTime();
 
 	// update the screen
-	SCR_UpdateScreen();
+	//SCR_UpdateScreen();
 
 	// update audio
 	S_Update();

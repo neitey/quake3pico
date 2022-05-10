@@ -24,7 +24,9 @@ extern cvar_t *vr_heightAdjust;
 extern cvar_t *vr_spacewarp;
 
 XrView* projections;
-GLboolean stageSupported = GL_FALSE;
+XrPosef prevViewTransform[2];
+qboolean fullscreenMode = qfalse;
+qboolean stageSupported = qfalse;
 
 void VR_UpdateStageBounds(ovrApp* pappState) {
     XrExtent2Df stageBounds = {};
@@ -279,7 +281,7 @@ void VR_InitRenderer( engine_t* engine ) {
 
     for (uint32_t i = 0; i < numOutputSpaces; i++) {
         if (referenceSpaces[i] == XR_REFERENCE_SPACE_TYPE_STAGE) {
-            stageSupported = GL_TRUE;
+            stageSupported = qtrue;
             break;
         }
     }
@@ -311,6 +313,9 @@ void VR_InitRenderer( engine_t* engine ) {
             engine->appState.ViewConfigurationView[0].recommendedImageRectHeight,
             spaceWarpProperties.recommendedMotionVectorImageRectWidth,
             spaceWarpProperties.recommendedMotionVectorImageRectHeight);
+
+    prevViewTransform[0] = XrPosef_Identity();
+    prevViewTransform[1] = XrPosef_Identity();
 }
 
 void VR_DestroyRenderer( engine_t* engine )
@@ -378,7 +383,7 @@ void VR_RenderScene( engine_t* engine, XrFovf fov, qboolean motionVector ) {
     ovrFramebuffer_Acquire(frameBuffer, motionVector);
     ovrFramebuffer_SetCurrent(frameBuffer, motionVector);
     VR_ClearFrameBuffer(width, height);
-    IN_Frame();
+    Com_RenderFrame();
 
     // Clear the alpha channel, other way OpenXR would not transfer the framebuffer fully
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
@@ -487,13 +492,17 @@ void VR_DrawFrame( engine_t* engine ) {
     engine->appState.LayerCount = 0;
     memset(engine->appState.Layers, 0, sizeof(ovrCompositorLayer_Union) * ovrMaxLayerCount);
 
-    VR_RenderScene( engine, fov, qfalse );
-
     XrCompositionLayerProjectionView projection_layer_elements[2] = {};
     XrCompositionLayerSpaceWarpInfoFB proj_spacewarp_views[2] = {};
     if (!VR_useScreenLayer() && !(cl.snap.ps.pm_flags & PMF_FOLLOW && vr.follow_mode == VRFM_FIRSTPERSON)) {
         vr.menuYaw = vr.hmdorientation[YAW];
 
+        if (fullscreenMode) {
+            VR_ReInitRenderer();
+            fullscreenMode = qfalse;
+        }
+
+        VR_RenderScene( engine, fov, qfalse );
         if (vr_spacewarp->integer) {
             //TODO: force motion vector shader
             VR_RenderScene( engine, fov, qtrue );
@@ -535,13 +544,7 @@ void VR_DrawFrame( engine_t* engine ) {
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.width = frameBuffer->MotionVectorDepthSwapChain.Width;
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.height = frameBuffer->MotionVectorDepthSwapChain.Height;
                 proj_spacewarp_views[eye].depthSubImage.imageArrayIndex = eye;
-
-                //TODO: implement delta pose
-                //XrPosef PrevFrameXrSpacePoseInWorld = prevFrameSceneMatrices.XrSpacePoseInWorld;
-                //XrPosef InvPrevFrameXrSpacePoseInWorld = XrPosef_Inverse(PrevFrameXrSpacePoseInWorld);
-                //XrPosef XrSpacePoseInWorld = sceneMatrices.XrSpacePoseInWorld;
-                //proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(InvPrevFrameXrSpacePoseInWorld, XrSpacePoseInWorld);
-                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Identity();
+                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(XrPosef_Inverse(prevViewTransform[eye]), viewTransform[eye]);
 
                 proj_spacewarp_views[eye].minDepth = 0.0f;
                 proj_spacewarp_views[eye].maxDepth = 1.0f;
@@ -558,6 +561,9 @@ void VR_DrawFrame( engine_t* engine ) {
 
         engine->appState.Layers[engine->appState.LayerCount++].Projection = projection_layer;
     } else {
+
+        fullscreenMode = qtrue;
+        VR_RenderScene( engine, fov, qfalse );
 
         // Build the cylinder layer
         int width = engine->appState.Renderer.FrameBuffer.ColorSwapChain.Width;
@@ -608,4 +614,6 @@ void VR_DrawFrame( engine_t* engine ) {
     ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
     frameBuffer->TextureSwapChainIndex++;
     frameBuffer->TextureSwapChainIndex %= frameBuffer->TextureSwapChainLength;
+    prevViewTransform[0] = viewTransform[0];
+    prevViewTransform[1] = viewTransform[1];
 }

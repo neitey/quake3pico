@@ -24,7 +24,7 @@ extern cvar_t *vr_heightAdjust;
 extern cvar_t *vr_spacewarp;
 
 XrView* projections;
-XrPosef prevViewTransform[2];
+XrPosef prevInvViewTransform[2];
 qboolean fullscreenMode = qfalse;
 qboolean stageSupported = qfalse;
 
@@ -314,8 +314,8 @@ void VR_InitRenderer( engine_t* engine ) {
             spaceWarpProperties.recommendedMotionVectorImageRectWidth,
             spaceWarpProperties.recommendedMotionVectorImageRectHeight);
 
-    prevViewTransform[0] = XrPosef_Identity();
-    prevViewTransform[1] = XrPosef_Identity();
+    prevInvViewTransform[0] = XrPosef_Identity();
+    prevInvViewTransform[1] = XrPosef_Identity();
 }
 
 void VR_DestroyRenderer( engine_t* engine )
@@ -449,16 +449,11 @@ void VR_DrawFrame( engine_t* engine ) {
     OXR(xrBeginFrame(engine->appState.Session, &beginFrameDesc));
     Com_PreFrame();
 
-    // Update HMD and controllers
-    XrPosef xfStageFromHead = IN_VRUpdateHMD( frameState.predictedDisplayTime );
-    IN_VRSyncActions();
-    IN_VRUpdateControllers( frameState.predictedDisplayTime );
-
     XrViewLocateInfo projectionInfo = {};
     projectionInfo.type = XR_TYPE_VIEW_LOCATE_INFO;
     projectionInfo.viewConfigurationType = engine->appState.ViewportConfig.viewConfigurationType;
     projectionInfo.displayTime = frameState.predictedDisplayTime;
-    projectionInfo.space = engine->appState.HeadSpace;
+    projectionInfo.space = engine->appState.CurrentSpace;
 
     XrViewState viewState = {XR_TYPE_VIEW_STATE, NULL};
 
@@ -476,10 +471,10 @@ void VR_DrawFrame( engine_t* engine ) {
 
     XrFovf fov = {};
     XrPosef viewTransform[2];
+    XrPosef invViewTransform[2];
     for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
-        XrPosef xfHeadFromEye = projections[eye].pose;
-        XrPosef xfStageFromEye = XrPosef_Multiply(xfStageFromHead, xfHeadFromEye);
-        viewTransform[eye] = XrPosef_Inverse(xfStageFromEye);
+        invViewTransform[eye] = projections[eye].pose;
+        viewTransform[eye] = XrPosef_Inverse(projections[eye].pose);
 
         fov.angleLeft += projections[eye].fov.angleLeft / 2.0f;
         fov.angleRight += projections[eye].fov.angleRight / 2.0f;
@@ -488,6 +483,22 @@ void VR_DrawFrame( engine_t* engine ) {
     }
     vr.fov_x = (fabs(fov.angleLeft) + fabs(fov.angleRight)) * 180.0f / M_PI;
     vr.fov_y = (fabs(fov.angleUp) + fabs(fov.angleDown)) * 180.0f / M_PI;
+
+    // Update HMD and controllers
+    IN_VRUpdateHMD( invViewTransform[0] );
+    IN_VRUpdateControllers( invViewTransform[0], frameState.predictedDisplayTime );
+    IN_VRSyncActions();
+
+    //Projection used for drawing HUD models etc
+    float hudScale = M_PI * 15.0f / 180.0f;
+    const ovrMatrix4f monoVRMatrix = ovrMatrix4f_CreateProjectionFov(
+            -hudScale, hudScale, hudScale, -hudScale, 1.0f, 0.0f );
+    const ovrMatrix4f projectionMatrix = ovrMatrix4f_CreateProjectionFov(
+            fov.angleLeft / vr.weapon_zoomLevel,
+            fov.angleRight / vr.weapon_zoomLevel,
+            fov.angleUp / vr.weapon_zoomLevel,
+            fov.angleDown / vr.weapon_zoomLevel,
+            1.0f, 0.0f );
 
     engine->appState.LayerCount = 0;
     memset(engine->appState.Layers, 0, sizeof(ovrCompositorLayer_Union) * ovrMaxLayerCount);
@@ -513,7 +524,7 @@ void VR_DrawFrame( engine_t* engine ) {
 
             memset(&projection_layer_elements[eye], 0, sizeof(XrCompositionLayerProjectionView));
             projection_layer_elements[eye].type = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
-            projection_layer_elements[eye].pose = XrPosef_Inverse(viewTransform[eye]);
+            projection_layer_elements[eye].pose = invViewTransform[eye];
             projection_layer_elements[eye].fov = fov;
 
             memset(&projection_layer_elements[eye].subImage, 0, sizeof(XrSwapchainSubImage));
@@ -544,7 +555,7 @@ void VR_DrawFrame( engine_t* engine ) {
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.width = frameBuffer->MotionVectorDepthSwapChain.Width;
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.height = frameBuffer->MotionVectorDepthSwapChain.Height;
                 proj_spacewarp_views[eye].depthSubImage.imageArrayIndex = eye;
-                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(XrPosef_Inverse(prevViewTransform[eye]), viewTransform[eye]);
+                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(prevInvViewTransform[eye], viewTransform[eye]);
 
                 proj_spacewarp_views[eye].minDepth = 0.0f;
                 proj_spacewarp_views[eye].maxDepth = 1.0f;
@@ -582,9 +593,9 @@ void VR_DrawFrame( engine_t* engine ) {
         cylinder_layer.subImage.imageArrayIndex = 0;
         const XrVector3f axis = {0.0f, 1.0f, 0.0f};
         XrVector3f pos = {
-                xfStageFromHead.position.x - sin(radians(vr.menuYaw)) * 4.0f,
+                invViewTransform[0].position.x - sin(radians(vr.menuYaw)) * 4.0f,
                 -0.25f,
-                xfStageFromHead.position.z - cos(radians(vr.menuYaw)) * 4.0f
+                invViewTransform[0].position.z - cos(radians(vr.menuYaw)) * 4.0f
         };
         cylinder_layer.pose.orientation = XrQuaternionf_CreateFromVectorAngle(axis, radians(vr.menuYaw));
         cylinder_layer.pose.position = pos;
@@ -614,6 +625,6 @@ void VR_DrawFrame( engine_t* engine ) {
     ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
     frameBuffer->TextureSwapChainIndex++;
     frameBuffer->TextureSwapChainIndex %= frameBuffer->TextureSwapChainLength;
-    prevViewTransform[0] = viewTransform[0];
-    prevViewTransform[1] = viewTransform[1];
+    prevInvViewTransform[0] = invViewTransform[0];
+    prevInvViewTransform[1] = invViewTransform[1];
 }

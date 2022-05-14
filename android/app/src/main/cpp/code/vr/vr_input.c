@@ -40,6 +40,7 @@ XrAction vibrateRightFeedback;
 XrActionSet runningActionSet;
 XrSpace leftControllerAimSpace = XR_NULL_HANDLE;
 XrSpace rightControllerAimSpace = XR_NULL_HANDLE;
+qboolean actionsAttached = qfalse;
 qboolean inputInitialized = qfalse;
 qboolean useSimpleProfile = qfalse;
 
@@ -1364,12 +1365,15 @@ void IN_VRSyncActions( void )
     engine_t* engine = VR_GetEngine();
 
     // Attach to session
-    XrSessionActionSetsAttachInfo attachInfo = {};
-    attachInfo.type = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO;
-    attachInfo.next = NULL;
-    attachInfo.countActionSets = 1;
-    attachInfo.actionSets = &runningActionSet;
-    OXR(xrAttachSessionActionSets(engine->appState.Session, &attachInfo));
+    if (!actionsAttached) {
+        XrSessionActionSetsAttachInfo attachInfo = {};
+        attachInfo.type = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO;
+        attachInfo.next = NULL;
+        attachInfo.countActionSets = 1;
+        attachInfo.actionSets = &runningActionSet;
+        OXR(xrAttachSessionActionSets(engine->appState.Session, &attachInfo));
+        actionsAttached = qtrue;
+    }
 
     // sync action data
     XrActiveActionSet activeActionSet = {};
@@ -1390,7 +1394,7 @@ void IN_VRSyncActions( void )
     getInfo.subactionPath = XR_NULL_PATH;
 }
 
-void IN_VRUpdateControllers( float predictedDisplayTime )
+void IN_VRUpdateControllers( XrPosef xfStageFromHead, float predictedDisplayTime )
 {
     engine_t* engine = VR_GetEngine();
 
@@ -1400,21 +1404,12 @@ void IN_VRUpdateControllers( float predictedDisplayTime )
     XrSpace controllerSpace[] = {leftControllerAimSpace, rightControllerAimSpace};
     for (int i = 0; i < 2; i++) {
         if (ActionPoseIsActive(controller[i], subactionPath[i])) {
-            XrSpaceVelocity vel = {};
-            vel.type = XR_TYPE_SPACE_VELOCITY;
             XrSpaceLocation loc = {};
             loc.type = XR_TYPE_SPACE_LOCATION;
-            loc.next = &vel;
-            OXR(xrLocateSpace(controllerSpace[i], engine->appState.CurrentSpace, predictedDisplayTime, &loc));
+            OXR(xrLocateSpace(controllerSpace[i], engine->appState.HeadSpace, predictedDisplayTime, &loc));
 
             engine->appState.TrackedController[i].Active = (loc.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
-            engine->appState.TrackedController[i].Pose = loc.pose;
-
-            // apply velocity
-            float dt = (in_vrEventTime - lastframetime) * 0.001f;
-            for (int j = 0; j < 3; j++) {
-                (&engine->appState.TrackedController[i].Pose.position.x)[j] += (&vel.linearVelocity.x)[j] * dt;
-            }
+            engine->appState.TrackedController[i].Pose = XrPosef_Multiply(xfStageFromHead, loc.pose);
         } else {
             ovrTrackedController_Clear(&engine->appState.TrackedController[i]);
         }
@@ -1427,16 +1422,10 @@ void IN_VRUpdateControllers( float predictedDisplayTime )
         IN_VRController(qtrue, engine->appState.TrackedController[1].Pose);
 }
 
-XrPosef IN_VRUpdateHMD( float predictedDisplayTime )
+void IN_VRUpdateHMD( XrPosef xfStageFromHead )
 {
-    engine_t* engine = VR_GetEngine();
-
     // We extract Yaw, Pitch, Roll instead of directly using the orientation
     // to allow "additional" yaw manipulation with mouse/controller.
-    XrSpaceLocation loc = {};
-    loc.type = XR_TYPE_SPACE_LOCATION;
-    OXR(xrLocateSpace(engine->appState.HeadSpace, engine->appState.CurrentSpace, predictedDisplayTime, &loc));
-    XrPosef xfStageFromHead = loc.pose;
     const XrQuaternionf quatHmd = xfStageFromHead.orientation;
     const XrVector3f positionHmd = xfStageFromHead.position;
     vec3_t rotation = {0, 0, 0};
@@ -1459,8 +1448,6 @@ XrPosef IN_VRUpdateHMD( float predictedDisplayTime )
     const float clientview_yaw = vr.clientviewangles[YAW] - vr.hmdorientation[YAW];
     vr.clientview_yaw_delta = vr.clientview_yaw_last - clientview_yaw;
     vr.clientview_yaw_last = clientview_yaw;
-
-    return xfStageFromHead;
 }
 
 //#endif

@@ -489,17 +489,6 @@ void VR_DrawFrame( engine_t* engine ) {
     IN_VRUpdateControllers( invViewTransform[0], frameState.predictedDisplayTime );
     IN_VRSyncActions();
 
-    //Projection used for drawing HUD models etc
-    float hudScale = M_PI * 15.0f / 180.0f;
-    const ovrMatrix4f monoVRMatrix = ovrMatrix4f_CreateProjectionFov(
-            -hudScale, hudScale, hudScale, -hudScale, 1.0f, 0.0f );
-    const ovrMatrix4f projectionMatrix = ovrMatrix4f_CreateProjectionFov(
-            fov.angleLeft / vr.weapon_zoomLevel,
-            fov.angleRight / vr.weapon_zoomLevel,
-            fov.angleUp / vr.weapon_zoomLevel,
-            fov.angleDown / vr.weapon_zoomLevel,
-            1.0f, 0.0f );
-
     engine->appState.LayerCount = 0;
     memset(engine->appState.Layers, 0, sizeof(ovrCompositorLayer_Union) * ovrMaxLayerCount);
 

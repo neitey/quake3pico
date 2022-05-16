@@ -43,6 +43,8 @@ extern const char *fallbackShader_generic_vp;
 extern const char *fallbackShader_generic_fp;
 extern const char *fallbackShader_lightall_vp;
 extern const char *fallbackShader_lightall_fp;
+extern const char *fallbackShader_motionvector_vp;
+extern const char *fallbackShader_motionvector_fp;
 extern const char *fallbackShader_pshadow_vp;
 extern const char *fallbackShader_pshadow_fp;
 extern const char *fallbackShader_shadowfill_vp;
@@ -179,6 +181,19 @@ typedef enum
 }
 glslPrintLog_t;
 
+/*
+====================
+GLSL_OverrideShader
+====================
+*/
+shaderProgram_t* GLSL_OverrideShader(shaderProgram_t * program)
+{
+    if( Cvar_VariableValue( "vr_motionVector" ) == 1)
+    {
+        return &tr.motionVectorShader;
+    }
+    return program;
+}
 
 /*
 ====================
@@ -848,7 +863,9 @@ void GLSL_FinishGPUShader(shaderProgram_t *program)
 
 void GLSL_SetUniformInt(shaderProgram_t *program, int uniformNum, GLint value)
 {
+	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
+#ifdef GLSL_CACHE
 	GLint *compare = (GLint *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
 
 	if (uniforms[uniformNum] == -1)
@@ -866,13 +883,15 @@ void GLSL_SetUniformInt(shaderProgram_t *program, int uniformNum, GLint value)
 	}
 
 	*compare = value;
-
+#endif
 	qglProgramUniform1iEXT(program->program, uniforms[uniformNum], value);
 }
 
 void GLSL_SetUniformFloat(shaderProgram_t *program, int uniformNum, GLfloat value)
 {
+	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
+#ifdef GLSL_CACHE
 	GLfloat *compare = (GLfloat *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
 
 	if (uniforms[uniformNum] == -1)
@@ -890,13 +909,15 @@ void GLSL_SetUniformFloat(shaderProgram_t *program, int uniformNum, GLfloat valu
 	}
 
 	*compare = value;
-
+#endif
 	qglProgramUniform1fEXT(program->program, uniforms[uniformNum], value);
 }
 
 void GLSL_SetUniformVec2(shaderProgram_t *program, int uniformNum, const vec2_t v)
 {
+	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
+#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
 
 	if (uniforms[uniformNum] == -1)
@@ -915,13 +936,15 @@ void GLSL_SetUniformVec2(shaderProgram_t *program, int uniformNum, const vec2_t 
 
 	compare[0] = v[0];
 	compare[1] = v[1];
-
+#endif
 	qglProgramUniform2fEXT(program->program, uniforms[uniformNum], v[0], v[1]);
 }
 
 void GLSL_SetUniformVec3(shaderProgram_t *program, int uniformNum, const vec3_t v)
 {
+	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
+#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
 
 	if (uniforms[uniformNum] == -1)
@@ -939,13 +962,15 @@ void GLSL_SetUniformVec3(shaderProgram_t *program, int uniformNum, const vec3_t 
 	}
 
 	VectorCopy(v, compare);
-
+#endif
 	qglProgramUniform3fEXT(program->program, uniforms[uniformNum], v[0], v[1], v[2]);
 }
 
 void GLSL_SetUniformVec4(shaderProgram_t *program, int uniformNum, const vec4_t v)
 {
+	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
+#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
 
 	if (uniforms[uniformNum] == -1)
@@ -963,13 +988,15 @@ void GLSL_SetUniformVec4(shaderProgram_t *program, int uniformNum, const vec4_t 
 	}
 
 	VectorCopy4(v, compare);
-
+#endif
 	qglProgramUniform4fEXT(program->program, uniforms[uniformNum], v[0], v[1], v[2], v[3]);
 }
 
 void GLSL_SetUniformFloat5(shaderProgram_t *program, int uniformNum, const vec5_t v)
 {
+	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
+#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
 
 	if (uniforms[uniformNum] == -1)
@@ -987,13 +1014,15 @@ void GLSL_SetUniformFloat5(shaderProgram_t *program, int uniformNum, const vec5_
 	}
 
 	VectorCopy5(v, compare);
-
+#endif
 	qglProgramUniform1fvEXT(program->program, uniforms[uniformNum], 5, v);
 }
 
 void GLSL_SetUniformMat4(shaderProgram_t *program, int uniformNum, const mat4_t matrix)
 {
+	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
+#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
 
 	if (uniforms[uniformNum] == -1)
@@ -1011,12 +1040,13 @@ void GLSL_SetUniformMat4(shaderProgram_t *program, int uniformNum, const mat4_t 
 	}
 
 	Mat4Copy(matrix, compare);
-
+#endif
 	qglProgramUniformMatrix4fvEXT(program->program, uniforms[uniformNum], 1, GL_FALSE, matrix);
 }
 
 void GLSL_SetUniformMat4BoneMatrix(shaderProgram_t *program, int uniformNum, /*const*/ mat4_t *matrix, int numMatricies)
 {
+	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
 
@@ -1490,6 +1520,22 @@ void GLSL_InitGPUShaders(void)
 
 	numEtcShaders++;
 
+	attribs = ATTR_POSITION | ATTR_TEXCOORD;
+	extradefines[0] = '\0';
+
+	if (!GLSL_InitGPUShader(&tr.motionVectorShader, "motionvector", attribs, qtrue, extradefines, qtrue, fallbackShader_motionvector_vp, fallbackShader_motionvector_fp))
+	{
+		ri.Error(ERR_FATAL, "Could not load bokeh shader!");
+	}
+
+	GLSL_InitUniforms(&tr.motionVectorShader);
+
+	GLSL_SetUniformInt(&tr.motionVectorShader, UNIFORM_TEXTUREMAP, TB_DIFFUSEMAP);
+
+	GLSL_FinishGPUShader(&tr.motionVectorShader);
+
+	numEtcShaders++;
+
 
 	attribs = ATTR_POSITION | ATTR_TEXCOORD;
 	extradefines[0] = '\0';
@@ -1730,6 +1776,7 @@ void GLSL_PrepareUniformBuffers(void)
 
 void GLSL_BindProgram(shaderProgram_t * program)
 {
+    program = GLSL_OverrideShader(program);
     GLuint programObject = program ? program->program : 0;
     char *name = program ? program->name : "NULL";
 
@@ -1775,6 +1822,7 @@ static GLuint GLSL_CalculateProjection() {
 
 void GLSL_BindBuffers( shaderProgram_t * program )
 {
+	program = GLSL_OverrideShader(program);
 	GLuint projection = GLSL_CalculateProjection();
 	qglBindBufferBase(
 			GL_UNIFORM_BUFFER,

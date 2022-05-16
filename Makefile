@@ -1893,6 +1893,8 @@ Q3R2STRINGOBJ = \
   $(B)/renderergles3/glsl/generic_vp.o \
   $(B)/renderergles3/glsl/lightall_fp.o \
   $(B)/renderergles3/glsl/lightall_vp.o \
+  $(B)/renderergles3/glsl/motionvector_fp.o \
+  $(B)/renderergles3/glsl/motionvector_vp.o \
   $(B)/renderergles3/glsl/pshadow_fp.o \
   $(B)/renderergles3/glsl/pshadow_vp.o \
   $(B)/renderergles3/glsl/shadowfill_fp.o \

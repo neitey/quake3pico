@@ -504,8 +504,9 @@ void VR_DrawFrame( engine_t* engine ) {
 
         VR_RenderScene( engine, fov, qfalse );
         if (vr_spacewarp->integer) {
-            //TODO: force motion vector shader
+            Cvar_SetValue( "vr_motionVector", 1 );
             VR_RenderScene( engine, fov, qtrue );
+            Cvar_SetValue( "vr_motionVector", 0 );
         }
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {

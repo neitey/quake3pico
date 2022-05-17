@@ -503,12 +503,12 @@ void VR_DrawFrame( engine_t* engine ) {
             fullscreenMode = qfalse;
         }
 
+        renderMotionVector = qtrue;
         VR_RenderScene( engine, fov, qfalse );
         if (vr_spacewarp->integer) {
-            renderMotionVector = qtrue;
             VR_RenderScene( engine, fov, qtrue );
-            renderMotionVector = qfalse;
         }
+        renderMotionVector = qfalse;
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
             ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;

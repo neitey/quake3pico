@@ -344,7 +344,7 @@ void ovrFramebuffer_Acquire(ovrFramebuffer* frameBuffer, GLboolean isMotionVecto
             res = xrWaitSwapchainImage(frameBuffer->MotionVectorSwapChain.Handle, &waitInfo);
             i++;
             ALOGV(
-                    " Retry xrWaitSwapchainImage %d times due to XR_TIMEOUT_EXPIRED (duration %f seconds)",
+                    " Retry xrWaitSwapchainImage %d times due to XR_TIMEOUT_EXPIRED (duration %f microseconds)",
                     i,
                     waitInfo.timeout * (1E-9));
         }

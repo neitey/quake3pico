@@ -49,7 +49,6 @@ cvar_t *vr_goreLevel = NULL;
 cvar_t *vr_hudDrawStatus = NULL;
 cvar_t *vr_showConsoleMessages = NULL;
 cvar_t *vr_spacewarp = NULL;
-cvar_t *vr_motionvector = NULL;
 
 engine_t* VR_Init( ovrJava java )
 {
@@ -170,7 +169,6 @@ void VR_InitCvars( void )
 	vr_hudDrawStatus = Cvar_Get ("vr_hudDrawStatus", "1", CVAR_ARCHIVE); // 0 - no hud, 1 - in-world hud, 2 - performance (static HUD)
 	vr_showConsoleMessages = Cvar_Get ("vr_showConsoleMessages", "1", CVAR_ARCHIVE);
 	vr_spacewarp = Cvar_Get ("vr_spaceWarp", "0", CVAR_ARCHIVE);
-	vr_motionvector = Cvar_Get ("vr_motionVector", "0", CVAR_ARCHIVE);
 
 	// Values are:  scale,right,up,forward,pitch,yaw,roll
 	// VALUES PROVIDED BY SkillFur - Thank-you!

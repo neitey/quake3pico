@@ -10,6 +10,7 @@ void VR_InitRenderer( engine_t* engine );
 void VR_DestroyRenderer( engine_t* engine );
 void VR_DrawFrame( engine_t* engine );
 void VR_ReInitRenderer();
+int VR_RenderMotionVector();
 
 #endif
 

@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_dsa.h"
 #include "../vr/vr_base.h"
 #include "../vr/vr_clientinfo.h"
+#include "../vr/vr_renderer.h"
 
 
 extern const char *fallbackShader_bokeh_vp;
@@ -188,7 +189,7 @@ GLSL_OverrideShader
 */
 shaderProgram_t* GLSL_OverrideShader(shaderProgram_t * program)
 {
-    if( Cvar_VariableValue( "vr_motionVector" ) == 1)
+    if( VR_RenderMotionVector() )
     {
         return &tr.motionVectorShader;
     }
@@ -865,8 +866,9 @@ void GLSL_SetUniformInt(shaderProgram_t *program, int uniformNum, GLint value)
 {
 	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
-#ifdef GLSL_CACHE
 	GLint *compare = (GLint *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
+	if (!compare)
+		return;
 
 	if (uniforms[uniformNum] == -1)
 		return;
@@ -883,7 +885,7 @@ void GLSL_SetUniformInt(shaderProgram_t *program, int uniformNum, GLint value)
 	}
 
 	*compare = value;
-#endif
+
 	qglProgramUniform1iEXT(program->program, uniforms[uniformNum], value);
 }
 
@@ -891,8 +893,9 @@ void GLSL_SetUniformFloat(shaderProgram_t *program, int uniformNum, GLfloat valu
 {
 	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
-#ifdef GLSL_CACHE
 	GLfloat *compare = (GLfloat *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
+	if (!compare)
+		return;
 
 	if (uniforms[uniformNum] == -1)
 		return;
@@ -909,7 +912,7 @@ void GLSL_SetUniformFloat(shaderProgram_t *program, int uniformNum, GLfloat valu
 	}
 
 	*compare = value;
-#endif
+
 	qglProgramUniform1fEXT(program->program, uniforms[uniformNum], value);
 }
 
@@ -917,8 +920,9 @@ void GLSL_SetUniformVec2(shaderProgram_t *program, int uniformNum, const vec2_t 
 {
 	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
-#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
+	if (!compare)
+		return;
 
 	if (uniforms[uniformNum] == -1)
 		return;
@@ -936,7 +940,7 @@ void GLSL_SetUniformVec2(shaderProgram_t *program, int uniformNum, const vec2_t 
 
 	compare[0] = v[0];
 	compare[1] = v[1];
-#endif
+
 	qglProgramUniform2fEXT(program->program, uniforms[uniformNum], v[0], v[1]);
 }
 
@@ -944,8 +948,9 @@ void GLSL_SetUniformVec3(shaderProgram_t *program, int uniformNum, const vec3_t 
 {
 	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
-#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
+	if (!compare)
+		return;
 
 	if (uniforms[uniformNum] == -1)
 		return;
@@ -962,7 +967,7 @@ void GLSL_SetUniformVec3(shaderProgram_t *program, int uniformNum, const vec3_t 
 	}
 
 	VectorCopy(v, compare);
-#endif
+
 	qglProgramUniform3fEXT(program->program, uniforms[uniformNum], v[0], v[1], v[2]);
 }
 
@@ -970,8 +975,9 @@ void GLSL_SetUniformVec4(shaderProgram_t *program, int uniformNum, const vec4_t 
 {
 	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
-#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
+	if (!compare)
+		return;
 
 	if (uniforms[uniformNum] == -1)
 		return;
@@ -988,7 +994,7 @@ void GLSL_SetUniformVec4(shaderProgram_t *program, int uniformNum, const vec4_t 
 	}
 
 	VectorCopy4(v, compare);
-#endif
+
 	qglProgramUniform4fEXT(program->program, uniforms[uniformNum], v[0], v[1], v[2], v[3]);
 }
 
@@ -996,8 +1002,9 @@ void GLSL_SetUniformFloat5(shaderProgram_t *program, int uniformNum, const vec5_
 {
 	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
-#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
+	if (!compare)
+		return;
 
 	if (uniforms[uniformNum] == -1)
 		return;
@@ -1014,7 +1021,7 @@ void GLSL_SetUniformFloat5(shaderProgram_t *program, int uniformNum, const vec5_
 	}
 
 	VectorCopy5(v, compare);
-#endif
+
 	qglProgramUniform1fvEXT(program->program, uniforms[uniformNum], 5, v);
 }
 
@@ -1022,8 +1029,9 @@ void GLSL_SetUniformMat4(shaderProgram_t *program, int uniformNum, const mat4_t 
 {
 	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
-#ifdef GLSL_CACHE
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
+	if (!compare)
+		return;
 
 	if (uniforms[uniformNum] == -1)
 		return;
@@ -1040,7 +1048,7 @@ void GLSL_SetUniformMat4(shaderProgram_t *program, int uniformNum, const mat4_t 
 	}
 
 	Mat4Copy(matrix, compare);
-#endif
+
 	qglProgramUniformMatrix4fvEXT(program->program, uniforms[uniformNum], 1, GL_FALSE, matrix);
 }
 
@@ -1049,6 +1057,8 @@ void GLSL_SetUniformMat4BoneMatrix(shaderProgram_t *program, int uniformNum, /*c
 	program = GLSL_OverrideShader(program);
 	GLint *uniforms = program->uniforms;
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
+	if (!compare)
+		return;
 
 	if (uniforms[uniformNum] == -1) {
 		return;

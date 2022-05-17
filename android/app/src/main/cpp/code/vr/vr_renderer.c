@@ -27,6 +27,7 @@ XrView* projections;
 XrPosef prevInvViewTransform[2];
 qboolean fullscreenMode = qfalse;
 qboolean stageSupported = qfalse;
+qboolean renderMotionVector = qfalse;
 
 void VR_UpdateStageBounds(ovrApp* pappState) {
     XrExtent2Df stageBounds = {};
@@ -504,9 +505,9 @@ void VR_DrawFrame( engine_t* engine ) {
 
         VR_RenderScene( engine, fov, qfalse );
         if (vr_spacewarp->integer) {
-            Cvar_SetValue( "vr_motionVector", 1 );
+            renderMotionVector = qtrue;
             VR_RenderScene( engine, fov, qtrue );
-            Cvar_SetValue( "vr_motionVector", 0 );
+            renderMotionVector = qfalse;
         }
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
@@ -545,7 +546,7 @@ void VR_DrawFrame( engine_t* engine ) {
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.width = frameBuffer->MotionVectorDepthSwapChain.Width;
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.height = frameBuffer->MotionVectorDepthSwapChain.Height;
                 proj_spacewarp_views[eye].depthSubImage.imageArrayIndex = eye;
-                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(prevInvViewTransform[eye], viewTransform[eye]);
+                proj_spacewarp_views[eye].appSpaceDeltaPose = prevInvViewTransform[eye]; //TODO:XrPosef_Multiply(prevInvViewTransform[eye], viewTransform[eye]);
 
                 proj_spacewarp_views[eye].minDepth = 0.0f;
                 proj_spacewarp_views[eye].maxDepth = 1.0f;
@@ -617,4 +618,9 @@ void VR_DrawFrame( engine_t* engine ) {
     frameBuffer->TextureSwapChainIndex %= frameBuffer->TextureSwapChainLength;
     prevInvViewTransform[0] = invViewTransform[0];
     prevInvViewTransform[1] = invViewTransform[1];
+}
+
+
+int VR_RenderMotionVector() {
+    return renderMotionVector;
 }

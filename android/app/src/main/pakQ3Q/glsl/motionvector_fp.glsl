@@ -30,5 +30,5 @@ void main()
 	
 	//TODO:implement motion vector
 	gl_FragColor.rgb = var_Color.rgb;
-	gl_FragColor.a = alpha;
+	gl_FragColor.a = alpha == 1.0 ? 1.0 : 0.0;
 }

@@ -32,5 +32,5 @@ void main()
 
     var_DiffuseTex = attr_TexCoord0.st;
 	var_Color = u_VertColor * attr_Color + u_BaseColor;
-	var_Color.rgb = abs(normal.xyz);
+	var_Color.rgb = var_Color.rgb * 0.1 + abs(normal.xyz) * 0.9;
 }

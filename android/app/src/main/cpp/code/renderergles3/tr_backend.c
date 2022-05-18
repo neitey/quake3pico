@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_local.h"
 #include "tr_fbo.h"
 #include "tr_dsa.h"
+#include "../vr/vr_renderer.h"
 
 backEndData_t	*backEndData;
 backEndState_t	backEnd;
@@ -360,7 +361,14 @@ void RB_BeginDrawingView (void) {
 	// ensures that depth writes are enabled for the depth clear
 	GL_State( GLS_DEFAULT );
 	// clear relevant buffers
-	clearBits = GL_DEPTH_BUFFER_BIT;
+    if( VR_RenderMotionVector() )
+    {
+        clearBits = 0;
+    }
+    else
+    {
+        clearBits = GL_DEPTH_BUFFER_BIT;
+    }
 
 	if ( r_measureOverdraw->integer || r_shadows->integer == 2 )
 	{
@@ -377,7 +385,10 @@ void RB_BeginDrawingView (void) {
 		clearBits |= GL_COLOR_BUFFER_BIT;
 	}
 
-	qglClear( clearBits );
+    if( clearBits )
+    {
+        qglClear( clearBits );
+    }
 
 	if ( ( backEnd.refdef.rdflags & RDF_HYPERSPACE ) )
 	{

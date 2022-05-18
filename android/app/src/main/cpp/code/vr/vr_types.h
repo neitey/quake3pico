@@ -173,6 +173,7 @@ GLboolean ovrApp_HandleXrEvents(ovrApp* app);
 
 void ovrFramebuffer_Acquire(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass);
 void ovrFramebuffer_Release(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass);
+void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass);
 void ovrFramebuffer_SetCurrent(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass);
 void ovrFramebuffer_SetNone();
 

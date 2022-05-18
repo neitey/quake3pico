@@ -152,14 +152,11 @@ bool ovrFramebuffer_Create(
         frameBuffer->MotionVectorWidth = motionVectorWidth;
         frameBuffer->MotionVectorHeight = motionVectorHeight;
 
-        GLenum mvFormat = GL_RGBA16F;
-        GLenum mvDepthFormat = GL_DEPTH_COMPONENT24;
         XrSwapchainCreateInfo swapChainCreateInfo;
         memset(&swapChainCreateInfo, 0, sizeof(swapChainCreateInfo));
         swapChainCreateInfo.type = XR_TYPE_SWAPCHAIN_CREATE_INFO;
-        swapChainCreateInfo.usageFlags =
-                XR_SWAPCHAIN_USAGE_SAMPLED_BIT | XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
-        swapChainCreateInfo.format = mvFormat;
+        swapChainCreateInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
+        swapChainCreateInfo.format = GL_RGBA16F;
         swapChainCreateInfo.sampleCount = 1;
         swapChainCreateInfo.width = frameBuffer->MotionVectorWidth;
         swapChainCreateInfo.height = frameBuffer->MotionVectorHeight;
@@ -196,9 +193,8 @@ bool ovrFramebuffer_Create(
                 (XrSwapchainImageBaseHeader*)frameBuffer->MotionVectorSwapChainImage));
 
         // Motion Vector depth construction
-        swapChainCreateInfo.usageFlags =
-                XR_SWAPCHAIN_USAGE_SAMPLED_BIT | XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        swapChainCreateInfo.format = mvDepthFormat;
+        swapChainCreateInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        swapChainCreateInfo.format = GL_DEPTH_COMPONENT24;
         OXR(xrCreateSwapchain(
                 session, &swapChainCreateInfo, &frameBuffer->MotionVectorDepthSwapChain.Handle));
 
@@ -239,8 +235,7 @@ bool ovrFramebuffer_Create(
             GL(glBindTexture(textureTarget, 0));
 
             // depth buffer texture.
-            const GLuint motionVectorDepthTexture =
-                    frameBuffer->MotionVectorDepthSwapChainImage[i].image;
+            const GLuint motionVectorDepthTexture = frameBuffer->MotionVectorDepthSwapChainImage[i].image;
             GL(glBindTexture(textureTarget, motionVectorDepthTexture));
             GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
             GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
@@ -251,15 +246,8 @@ bool ovrFramebuffer_Create(
             // Create the frame buffer.
             GL(glGenFramebuffers(1, &frameBuffer->MotionVectorFrameBuffers[i]));
             GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->MotionVectorFrameBuffers[i]));
-            GL(glFramebufferTextureMultiviewOVR(
-                    GL_DRAW_FRAMEBUFFER,
-                    GL_DEPTH_ATTACHMENT,
-                    textureTarget,
-                    motionVectorDepthTexture,
-                    0, 2));
-
-            GL(glFramebufferTextureMultiviewOVR(
-                    GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, motionVectorTexture, 0, 2));
+            GL(glFramebufferTextureMultiviewOVR(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, motionVectorDepthTexture, 0, 0, 2));
+            GL(glFramebufferTextureMultiviewOVR(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, motionVectorTexture, 0, 0, 2));
 
             GL(GLenum renderFramebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
             GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
@@ -308,6 +296,17 @@ void ovrFramebuffer_SetCurrent(ovrFramebuffer* frameBuffer, GLboolean isMotionVe
 
 void ovrFramebuffer_SetNone() {
     GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+}
+
+void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass) {
+    if (isMotionVectorPass) {
+        // AppSpaceWarp Both depth and color buffer will be resolved for motion vector pass
+    } else {
+        // Discard the depth buffer, so the tiler won't need to write it back out to memory.
+        const GLenum depthAttachment[1] = {GL_DEPTH_ATTACHMENT};
+        glInvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, 1, depthAttachment);
+        // We now let the resolve happen implicitly.
+    }
 }
 
 void ovrFramebuffer_Acquire(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass) {

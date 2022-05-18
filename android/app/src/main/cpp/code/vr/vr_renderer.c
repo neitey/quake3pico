@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ENABLE_GL_DEBUG 0
+#define ENABLE_GL_DEBUG 1
 #define ENABLE_GL_DEBUG_VERBOSE 0
 #if ENABLE_GL_DEBUG
 #include <GLES3/gl32.h>
@@ -394,6 +394,7 @@ void VR_RenderScene( engine_t* engine, XrFovf fov, qboolean motionVector ) {
 
     // Release framebuffer
     ovrFramebuffer_Release(frameBuffer, motionVector);
+    ovrFramebuffer_Resolve(frameBuffer, motionVector);
     ovrFramebuffer_SetNone();
 }
 
@@ -502,12 +503,12 @@ void VR_DrawFrame( engine_t* engine ) {
             fullscreenMode = qfalse;
         }
 
+        VR_RenderScene( engine, fov, qfalse );
         if (vr_spacewarp->integer) {
             renderMotionVector = qtrue;
             VR_RenderScene( engine, fov, qtrue );
             renderMotionVector = qfalse;
         }
-        VR_RenderScene( engine, fov, qfalse );
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
             ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;

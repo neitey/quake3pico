@@ -720,8 +720,8 @@ typedef struct shaderProgram_s
 	uint32_t        attribs;	// vertex array attributes
 
 	//New for multiview - The view and projection matrix uniforms
-	GLuint		projectionMatrixBinding;
-	GLuint		viewMatricesBinding;
+	GLuint		viewProjectionMatrixBinding;
+	GLuint		prevViewProjectionMatrixBinding;
 
 	// uniform parameters
 	GLint uniforms[UNIFORM_COUNT];
@@ -2550,5 +2550,6 @@ size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality,
 void RE_TakeVideoFrame( int width, int height,
 		byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
 
+void myGlMultMatrix( const float *a, const float *b, float *out );
 
 #endif //TR_LOCAL_H

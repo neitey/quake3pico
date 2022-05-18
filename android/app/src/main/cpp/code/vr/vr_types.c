@@ -310,17 +310,6 @@ void ovrFramebuffer_SetNone() {
     GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
 }
 
-void ovrFramebuffer_Resolve(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass) {
-    if (isMotionVectorPass) {
-        // AppSpaceWarp Both depth and color buffer will be resolved for motion vector pass
-    } else {
-        // Discard the depth buffer, so the tiler won't need to write it back out to memory.
-        const GLenum depthAttachment[1] = {GL_DEPTH_ATTACHMENT};
-        glInvalidateFramebuffer(GL_DRAW_FRAMEBUFFER, 1, depthAttachment);
-        // We now let the resolve happen implicitly.
-    }
-}
-
 void ovrFramebuffer_Acquire(ovrFramebuffer* frameBuffer, GLboolean isMotionVectorPass) {
     // Acquire the swapchain image
     XrSwapchainImageAcquireInfo acquireInfo = {XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO, NULL};

@@ -33,13 +33,9 @@ uniform mat4 u_BoneMatrix[MAX_GLSL_BONES];
 uniform vec4  u_Color;
 
 // Uniforms
-layout(shared) uniform ViewMatrices
+layout(shared) uniform ViewProjectionMatrices
 {
-    uniform mat4 u_ViewMatrices[NUM_VIEWS];
-};
-layout(shared) uniform ProjectionMatrix
-{
-    uniform mat4 u_ProjectionMatrix;
+    uniform mat4 u_ViewProjectionMatrices[NUM_VIEWS];
 };
 
 varying float   var_Scale;
@@ -136,7 +132,7 @@ void main()
 	position.xyz = DeformPosition(position.xyz, normal, attr_TexCoord0.st);
 #endif
 
-	gl_Position = u_ProjectionMatrix * (u_ViewMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0)));
+	gl_Position = u_ViewProjectionMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0));
 
 	var_Scale = CalcFog(position) * u_Color.a * u_Color.a;
 }

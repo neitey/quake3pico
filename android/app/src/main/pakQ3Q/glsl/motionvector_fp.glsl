@@ -6,6 +6,8 @@ varying vec2      var_DiffuseTex;
 
 varying vec4      var_Color;
 
+varying highp vec4 clipPos;
+varying highp vec4 prevClipPos;
 
 void main()
 {
@@ -27,8 +29,7 @@ void main()
 		if (alpha < 0.5)
 			discard;
 	}
-	
-	//TODO:implement motion vector
-	gl_FragColor.rgb = var_Color.rgb;
+
+    gl_FragColor = ( clipPos / clipPos.w ) - ( prevClipPos / prevClipPos.w );
 	gl_FragColor.a = alpha == 1.0 ? 1.0 : 0.0;
 }

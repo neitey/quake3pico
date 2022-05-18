@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "tr_local.h"
 //#include "assert.h"
+#include "../vr/vr_renderer.h"
 
 #define MAX_VERTS_ON_POLY		64
 
@@ -259,6 +260,10 @@ R_MarkFragments
 */
 int R_MarkFragments( int numPoints, const vec3_t *points, const vec3_t projection,
 				   int maxPoints, vec3_t pointBuffer, int maxFragments, markFragment_t *fragmentBuffer ) {
+
+	if( VR_RenderMotionVector() )
+		return 0;
+
 	int				numsurfaces, numPlanes;
 	int				i, j, k, m, n;
 	surfaceType_t	*surfaces[64];

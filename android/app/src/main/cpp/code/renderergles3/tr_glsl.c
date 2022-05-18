@@ -77,8 +77,8 @@ typedef enum {
 	PROJECTION_COUNT
 } projection_t;
 
-GLuint		viewMatricesBuffer[PROJECTION_COUNT];
-GLuint		projectionMatricesBuffer[PROJECTION_COUNT];
+GLuint		matrixBuffer[PROJECTION_COUNT];
+GLuint		prevMatrixBuffer[PROJECTION_COUNT];
 
 float       orthoProjectionMatrix[16];
 
@@ -198,95 +198,73 @@ shaderProgram_t* GLSL_OverrideShader(shaderProgram_t * program)
 
 /*
 ====================
-GLSL_ViewMatricesUniformBuffer
-====================
-*/
-static void GLSL_ViewMatricesUniformBuffer(const float eyeView[32], const float modelView[32]) {
-
-	for (int i = 0; i < PROJECTION_COUNT; ++i)
-	{
-		// Update the scene matrices for when we are using a normal projection
-		qglBindBuffer(GL_UNIFORM_BUFFER, viewMatricesBuffer[i]);
-		float *viewMatrices = (float *) qglMapBufferRange(
-				GL_UNIFORM_BUFFER,
-				0,
-				2 * 16 * sizeof(float),
-				GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-
-		if (viewMatrices == NULL)
-		{
-			ri.Error(ERR_DROP, "View Matrices Uniform Buffer is NULL");
-			return;
-		}
-
-		switch (i)
-        {
-            case FULLSCREEN_ORTHO_PROJECTION:
-            case HUDBUFFER_ORTHO_PROJECTION:
-            {
-                Mat4Identity( viewMatrices );
-                Mat4Identity( viewMatrices + 16 );
-            }
-            break;
-            case STEREO_ORTHO_PROJECTION:
-            {
-            	//This is a bit of a fiddle this calc.. it is just done like this to
-            	//make the HUD depths line up with the weapon wheel depth. I _know_ there
-            	//would be a proper calculation to do this exactly, but this is good enough
-            	//and I've just had enough messing about with this
-				const auto depthOffset = (5-powf(vr_hudDepth->integer, 0.7f)) * 16;
-                vec3_t translate;
-                VectorSet(translate, depthOffset, 0, 0);
-                Mat4Translation( translate, viewMatrices );
-
-                VectorSet(translate, -depthOffset, 0, 0);
-                Mat4Translation( translate, viewMatrices + 16 );
-            }
-            break;
-            case MIRROR_VR_PROJECTION:
-            case VR_PROJECTION:
-            {
-                Mat4Copy(eyeView, viewMatrices);
-                Mat4Copy(eyeView+16, viewMatrices+16);
-            }
-            break;
-            case MONO_VR_PROJECTION:
-            {
-                Mat4Copy(modelView, viewMatrices);
-                Mat4Copy(modelView, viewMatrices+16);
-            }
-            break;
-        }
-
-		qglUnmapBuffer(GL_UNIFORM_BUFFER);
-		qglBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
-}
-
-/*
-====================
 GLSL_ProjectionMatricesUniformBuffer
 ====================
 */
-static void GLSL_ProjectionMatricesUniformBuffer(GLint projectionMatricesBuffer, const float value[16]) {
+static void GLSL_MatricesUniformBuffer(GLint* buffer, int projection, const float value[16]) {
 
 	// Update the scene matrices.
-	qglBindBuffer(GL_UNIFORM_BUFFER, projectionMatricesBuffer);
-	float* projectionMatrix = (float*)qglMapBufferRange(
+	qglBindBuffer(GL_UNIFORM_BUFFER, buffer[projection]);
+	float* matrix = (float*)qglMapBufferRange(
 			GL_UNIFORM_BUFFER,
 			0,
-			16 * sizeof(float),
+			2 * 16 * sizeof(float),
 			GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
-	if (projectionMatrix == NULL)
+	if (matrix == NULL)
 	{
 		ri.Error(ERR_DROP, "Projection Matrices Uniform Buffer is NULL");
 		return;
 	}
 
-	memcpy((char*)projectionMatrix, value, 16 * sizeof(float));
+    float viewMatrices[32];
+    float modelView[16];
+    float eyeView[32];
+    memcpy(&modelView[0], &tr.viewParms.world.modelView[0], sizeof(float) * 16);
+    memcpy(&eyeView[0], &tr.viewParms.world.eyeViewMatrix[0][0], sizeof(float) * 32);
+    switch (projection)
+    {
+        case FULLSCREEN_ORTHO_PROJECTION:
+        case HUDBUFFER_ORTHO_PROJECTION:
+        {
+            Mat4Identity( viewMatrices );
+            Mat4Identity( viewMatrices + 16 );
+        }
+            break;
+        case STEREO_ORTHO_PROJECTION:
+        {
+            //This is a bit of a fiddle this calc.. it is just done like this to
+            //make the HUD depths line up with the weapon wheel depth. I _know_ there
+            //would be a proper calculation to do this exactly, but this is good enough
+            //and I've just had enough messing about with this
+            const auto depthOffset = (5-powf(vr_hudDepth->integer, 0.7f)) * 16;
+            vec3_t translate;
+            VectorSet(translate, depthOffset, 0, 0);
+            Mat4Translation( translate, viewMatrices );
 
-	qglUnmapBuffer(GL_UNIFORM_BUFFER);
+            VectorSet(translate, -depthOffset, 0, 0);
+            Mat4Translation( translate, viewMatrices + 16 );
+        }
+            break;
+        case MIRROR_VR_PROJECTION:
+        case VR_PROJECTION:
+        {
+            Mat4Copy(eyeView, viewMatrices);
+            Mat4Copy(eyeView+16, viewMatrices+16);
+        }
+            break;
+        case MONO_VR_PROJECTION:
+        {
+            Mat4Copy(modelView, viewMatrices);
+            Mat4Copy(modelView, viewMatrices+16);
+        }
+            break;
+    }
+
+	myGlMultMatrix(viewMatrices, value, matrix);
+	myGlMultMatrix(viewMatrices + 16, value, matrix + 16);
+
+    qglUnmapBuffer(GL_UNIFORM_BUFFER);
 	qglBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -795,22 +773,26 @@ void GLSL_InitUniforms(shaderProgram_t *program)
 
 	GLint *uniforms = program->uniforms;
 
-	//Shader Matrices for the View Matrices
-	GLuint viewMatricesUniformLocation = qglGetUniformBlockIndex(program->program, "ViewMatrices");
+	//Shader Matrices for the View-Projection Matrices
+	GLuint viewProjectionMatricesUniformLocation = qglGetUniformBlockIndex(program->program, "ViewProjectionMatrices");
 	int numBufferBindings = 0;
-	program->viewMatricesBinding = numBufferBindings++;
-	qglUniformBlockBinding(
-			program->program,
-			viewMatricesUniformLocation,
-			program->viewMatricesBinding);
+	if (viewProjectionMatricesUniformLocation != GL_INVALID_INDEX) {
+		program->viewProjectionMatrixBinding = numBufferBindings++;
+		qglUniformBlockBinding(
+				program->program,
+				viewProjectionMatricesUniformLocation,
+				program->viewProjectionMatrixBinding);
+	}
 
-	//Shader Matrices for the Projection Matrix
-	GLuint projectionMatrixUniformLocation = qglGetUniformBlockIndex(program->program, "ProjectionMatrix");
-	program->projectionMatrixBinding = numBufferBindings++;
-	qglUniformBlockBinding(
-			program->program,
-			projectionMatrixUniformLocation,
-			program->projectionMatrixBinding);
+	//Shader Matrices for the previous View-Projection Matrices
+	GLuint prevViewProjectionMatricesUniformLocation = qglGetUniformBlockIndex(program->program, "PrevViewProjectionMatrices");
+	if (prevViewProjectionMatricesUniformLocation != GL_INVALID_INDEX) {
+		program->prevViewProjectionMatrixBinding = numBufferBindings++;
+		qglUniformBlockBinding(
+				program->program,
+                prevViewProjectionMatricesUniformLocation,
+				program->prevViewProjectionMatrixBinding);
+	}
 
 	size = 0;
 	for (i = 0; i < UNIFORM_COUNT; i++)
@@ -1126,9 +1108,9 @@ void GLSL_InitGPUShaders(void)
 
 	for (int i = 0; i < PROJECTION_COUNT; ++i)
 	{
-		//Generate buffer for 2 * view matrices
-		qglGenBuffers(1, &viewMatricesBuffer[i]);
-		qglBindBuffer(GL_UNIFORM_BUFFER, viewMatricesBuffer[i]);
+		//Generate buffer for 2 * view projection matrices
+		qglGenBuffers(1, &matrixBuffer[i]);
+		qglBindBuffer(GL_UNIFORM_BUFFER, matrixBuffer[i]);
 		qglBufferData(
 				GL_UNIFORM_BUFFER,
 				2 * 16 * sizeof(float),
@@ -1136,11 +1118,12 @@ void GLSL_InitGPUShaders(void)
 				GL_STATIC_DRAW);
 		qglBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		qglGenBuffers(1, &projectionMatricesBuffer[i]);
-		qglBindBuffer(GL_UNIFORM_BUFFER, projectionMatricesBuffer[i]);
+		//Generate buffer for 2 * previous view projection matrices
+		qglGenBuffers(1, &prevMatrixBuffer[i]);
+		qglBindBuffer(GL_UNIFORM_BUFFER, prevMatrixBuffer[i]);
 		qglBufferData(
 				GL_UNIFORM_BUFFER,
-				16 * sizeof(float),
+				2 * 16 * sizeof(float),
 				NULL,
 				GL_STATIC_DRAW);
 		qglBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -1737,51 +1720,51 @@ void GLSL_ShutdownGPUShaders(void)
 		GLSL_DeleteGPUShader(&tr.depthBlurShader[i]);
 
 	//Clean up buffers
-	qglDeleteBuffers(PROJECTION_COUNT, viewMatricesBuffer);
-	qglDeleteBuffers(PROJECTION_COUNT, projectionMatricesBuffer);
+	qglDeleteBuffers(PROJECTION_COUNT, matrixBuffer);
+	qglDeleteBuffers(PROJECTION_COUNT, prevMatrixBuffer);
+}
+
+void GLSL_UniformMatrixBuffers(GLuint* buffer)
+{
+	int width, height;
+	if (glState.currentFBO)
+	{
+		width = glState.currentFBO->width;
+		height = glState.currentFBO->height;
+	}
+	else
+	{
+		width = glConfig.vidWidth;
+		height = glConfig.vidHeight;
+	}
+
+	Mat4Ortho(0, width, height, 0, 0, 1, orthoProjectionMatrix);
+
+	//ortho projection matrices
+	GLSL_MatricesUniformBuffer(buffer, FULLSCREEN_ORTHO_PROJECTION, orthoProjectionMatrix);
+	GLSL_MatricesUniformBuffer(buffer, STEREO_ORTHO_PROJECTION, orthoProjectionMatrix);
+
+	float hudOrthoProjectionMatrix[16];
+	Mat4Ortho(0, 640, 480, 0, 0, 1, hudOrthoProjectionMatrix);
+	GLSL_MatricesUniformBuffer(buffer, HUDBUFFER_ORTHO_PROJECTION, hudOrthoProjectionMatrix);
+
+	//VR projection matrix
+	GLSL_MatricesUniformBuffer(buffer, VR_PROJECTION, tr.vrParms.projection);
+
+	//Mirror VR projection matrix
+	GLSL_MatricesUniformBuffer(buffer, MIRROR_VR_PROJECTION, tr.vrParms.mirrorProjection);
+
+	//Used for drawing models
+	GLSL_MatricesUniformBuffer(buffer, MONO_VR_PROJECTION, tr.vrParms.monoVRProjection);
 }
 
 void GLSL_PrepareUniformBuffers(void)
 {
-    int width, height;
-    if (glState.currentFBO)
-    {
-        width = glState.currentFBO->width;
-        height = glState.currentFBO->height;
-    }
-    else
-    {
-        width = glConfig.vidWidth;
-        height = glConfig.vidHeight;
-    }
-
-    Mat4Ortho(0, width, height, 0, 0, 1, orthoProjectionMatrix);
-
-    //ortho projection matrices
-    GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[FULLSCREEN_ORTHO_PROJECTION],
-            orthoProjectionMatrix);
-    GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[STEREO_ORTHO_PROJECTION],
-            orthoProjectionMatrix);
-
-    float hudOrthoProjectionMatrix[16];
-    Mat4Ortho(0, 640, 480, 0, 0, 1, hudOrthoProjectionMatrix);
-    GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[HUDBUFFER_ORTHO_PROJECTION],
-            hudOrthoProjectionMatrix);
-
-    //VR projection matrix
-    GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[VR_PROJECTION],
-            tr.vrParms.projection);
-
-    //Mirror VR projection matrix
-	GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[MIRROR_VR_PROJECTION],
-                                         tr.vrParms.mirrorProjection);
-
-    //Used for drawing models
-    GLSL_ProjectionMatricesUniformBuffer(projectionMatricesBuffer[MONO_VR_PROJECTION],
-                                         tr.vrParms.monoVRProjection);
-
-    //Set all view matrices
-	GLSL_ViewMatricesUniformBuffer(tr.viewParms.world.eyeViewMatrix, tr.viewParms.world.modelView);
+	GLSL_UniformMatrixBuffers(matrixBuffer);
+	if (!VR_RenderMotionVector())
+	{
+		GLSL_UniformMatrixBuffers(prevMatrixBuffer);
+	}
 }
 
 void GLSL_BindProgram(shaderProgram_t * program)
@@ -1836,14 +1819,16 @@ void GLSL_BindBuffers( shaderProgram_t * program )
 	GLuint projection = GLSL_CalculateProjection();
 	qglBindBufferBase(
 			GL_UNIFORM_BUFFER,
-			program->viewMatricesBinding,
-			viewMatricesBuffer[projection]);
+			program->viewProjectionMatrixBinding,
+			matrixBuffer[projection]);
 
-	qglBindBufferBase(
-			GL_UNIFORM_BUFFER,
-			program->projectionMatrixBinding,
-			projectionMatricesBuffer[projection]);
-
+    if (VR_RenderMotionVector())
+    {
+        qglBindBufferBase(
+                GL_UNIFORM_BUFFER,
+                program->prevViewProjectionMatrixBinding,
+                prevMatrixBuffer[projection]);
+    }
 }
 
 

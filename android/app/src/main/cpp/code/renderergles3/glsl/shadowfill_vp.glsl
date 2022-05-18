@@ -28,13 +28,9 @@ uniform float   u_VertexLerp;
 uniform mat4 u_BoneMatrix[MAX_GLSL_BONES];
 #endif
 
-layout(shared) uniform ViewMatrices
+layout(shared) uniform ViewProjectionMatrices
 {
-    uniform mat4 u_ViewMatrices[NUM_VIEWS];
-};
-layout(shared) uniform ProjectionMatrix
-{
-    uniform mat4 u_ProjectionMatrix;
+    uniform mat4 u_ViewProjectionMatrices[NUM_VIEWS];
 };
 
 varying vec3    var_Position;
@@ -113,7 +109,7 @@ void main()
 
 	position = DeformPosition(position, normal, attr_TexCoord0.st);
 
-	gl_Position = u_ProjectionMatrix * (u_ViewMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0)));
+	gl_Position = u_ViewProjectionMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0));
 	
 	var_Position  = (u_ModelMatrix * vec4(position, 1.0)).xyz;
 }

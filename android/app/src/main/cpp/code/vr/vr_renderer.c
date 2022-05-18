@@ -393,7 +393,6 @@ void VR_RenderScene( engine_t* engine, XrFovf fov, qboolean motionVector ) {
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
     // Release framebuffer
-    ovrFramebuffer_Resolve(frameBuffer, motionVector);
     ovrFramebuffer_Release(frameBuffer, motionVector);
     ovrFramebuffer_SetNone();
 }
@@ -503,12 +502,12 @@ void VR_DrawFrame( engine_t* engine ) {
             fullscreenMode = qfalse;
         }
 
-        VR_RenderScene( engine, fov, qfalse );
         if (vr_spacewarp->integer) {
             renderMotionVector = qtrue;
             VR_RenderScene( engine, fov, qtrue );
             renderMotionVector = qfalse;
         }
+        VR_RenderScene( engine, fov, qfalse );
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
             ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;

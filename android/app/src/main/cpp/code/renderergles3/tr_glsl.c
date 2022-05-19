@@ -79,6 +79,7 @@ typedef enum {
 
 GLuint		matrixBuffer[PROJECTION_COUNT];
 GLuint		prevMatrixBuffer[PROJECTION_COUNT];
+float		matrixCache[PROJECTION_COUNT][32];
 
 float       orthoProjectionMatrix[16];
 
@@ -201,7 +202,7 @@ shaderProgram_t* GLSL_OverrideShader(shaderProgram_t * program)
 GLSL_ProjectionMatricesUniformBuffer
 ====================
 */
-static void GLSL_MatricesUniformBuffer(GLint* buffer, int projection, const float value[16]) {
+static void GLSL_MatricesUniformBuffer(GLint* buffer, qboolean update, int projection, const float value[16]) {
 
 	// Update the scene matrices.
 	qglBindBuffer(GL_UNIFORM_BUFFER, buffer[projection]);
@@ -217,52 +218,61 @@ static void GLSL_MatricesUniformBuffer(GLint* buffer, int projection, const floa
 		return;
 	}
 
-    float viewMatrices[32];
-    float modelView[16];
-    float eyeView[32];
-    memcpy(&modelView[0], &tr.viewParms.world.modelView[0], sizeof(float) * 16);
-    memcpy(&eyeView[0], &tr.viewParms.world.eyeViewMatrix[0][0], sizeof(float) * 32);
-    switch (projection)
-    {
-        case FULLSCREEN_ORTHO_PROJECTION:
-        case HUDBUFFER_ORTHO_PROJECTION:
+    if (update) {
+        float viewMatrices[32];
+        float modelView[16];
+        float eyeView[32];
+        memcpy(&modelView[0], &tr.viewParms.world.modelView[0], sizeof(float) * 16);
+        memcpy(&eyeView[0], &tr.viewParms.world.eyeViewMatrix[0][0], sizeof(float) * 32);
+        switch (projection)
         {
-            Mat4Identity( viewMatrices );
-            Mat4Identity( viewMatrices + 16 );
-        }
-            break;
-        case STEREO_ORTHO_PROJECTION:
-        {
-            //This is a bit of a fiddle this calc.. it is just done like this to
-            //make the HUD depths line up with the weapon wheel depth. I _know_ there
-            //would be a proper calculation to do this exactly, but this is good enough
-            //and I've just had enough messing about with this
-            const auto depthOffset = (5-powf(vr_hudDepth->integer, 0.7f)) * 16;
-            vec3_t translate;
-            VectorSet(translate, depthOffset, 0, 0);
-            Mat4Translation( translate, viewMatrices );
+            case FULLSCREEN_ORTHO_PROJECTION:
+            case HUDBUFFER_ORTHO_PROJECTION:
+            {
+                Mat4Identity( viewMatrices );
+                Mat4Identity( viewMatrices + 16 );
+            }
+                break;
+            case STEREO_ORTHO_PROJECTION:
+            {
+                //This is a bit of a fiddle this calc.. it is just done like this to
+                //make the HUD depths line up with the weapon wheel depth. I _know_ there
+                //would be a proper calculation to do this exactly, but this is good enough
+                //and I've just had enough messing about with this
+                const auto depthOffset = (5-powf(vr_hudDepth->integer, 0.7f)) * 16;
+                vec3_t translate;
+                VectorSet(translate, depthOffset, 0, 0);
+                Mat4Translation( translate, viewMatrices );
 
-            VectorSet(translate, -depthOffset, 0, 0);
-            Mat4Translation( translate, viewMatrices + 16 );
+                VectorSet(translate, -depthOffset, 0, 0);
+                Mat4Translation( translate, viewMatrices + 16 );
+            }
+                break;
+            case MIRROR_VR_PROJECTION:
+            case VR_PROJECTION:
+            {
+                Mat4Copy(eyeView, viewMatrices);
+                Mat4Copy(eyeView+16, viewMatrices+16);
+            }
+                break;
+            case MONO_VR_PROJECTION:
+            {
+                Mat4Copy(modelView, viewMatrices);
+                Mat4Copy(modelView, viewMatrices+16);
+            }
+                break;
         }
-            break;
-        case MIRROR_VR_PROJECTION:
-        case VR_PROJECTION:
-        {
-            Mat4Copy(eyeView, viewMatrices);
-            Mat4Copy(eyeView+16, viewMatrices+16);
-        }
-            break;
-        case MONO_VR_PROJECTION:
-        {
-            Mat4Copy(modelView, viewMatrices);
-            Mat4Copy(modelView, viewMatrices+16);
-        }
-            break;
-    }
 
-	myGlMultMatrix(viewMatrices, value, matrix);
-	myGlMultMatrix(viewMatrices + 16, value, matrix + 16);
+		float result[32];
+        myGlMultMatrix(viewMatrices, value, result);
+        myGlMultMatrix(viewMatrices + 16, value, result + 16);
+		if (VR_RenderMotionVector()) {
+			memcpy(&matrixCache[projection][0], &result[0], sizeof(float) * 32);
+		}
+		memcpy(&matrix[0], &result[0], sizeof(float) * 32);
+    } else {
+		memcpy(&matrix[0], &matrixCache[projection][0], sizeof(float) * 32);
+	}
 
     qglUnmapBuffer(GL_UNIFORM_BUFFER);
 	qglBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -1724,7 +1734,7 @@ void GLSL_ShutdownGPUShaders(void)
 	qglDeleteBuffers(PROJECTION_COUNT, prevMatrixBuffer);
 }
 
-void GLSL_UniformMatrixBuffers(GLuint* buffer)
+void GLSL_UniformMatrixBuffers(GLuint* buffer, qboolean update)
 {
 	int width, height;
 	if (glState.currentFBO)
@@ -1741,30 +1751,30 @@ void GLSL_UniformMatrixBuffers(GLuint* buffer)
 	Mat4Ortho(0, width, height, 0, 0, 1, orthoProjectionMatrix);
 
 	//ortho projection matrices
-	GLSL_MatricesUniformBuffer(buffer, FULLSCREEN_ORTHO_PROJECTION, orthoProjectionMatrix);
-	GLSL_MatricesUniformBuffer(buffer, STEREO_ORTHO_PROJECTION, orthoProjectionMatrix);
+	GLSL_MatricesUniformBuffer(buffer, update, FULLSCREEN_ORTHO_PROJECTION, orthoProjectionMatrix);
+	GLSL_MatricesUniformBuffer(buffer, update, STEREO_ORTHO_PROJECTION, orthoProjectionMatrix);
 
 	float hudOrthoProjectionMatrix[16];
 	Mat4Ortho(0, 640, 480, 0, 0, 1, hudOrthoProjectionMatrix);
-	GLSL_MatricesUniformBuffer(buffer, HUDBUFFER_ORTHO_PROJECTION, hudOrthoProjectionMatrix);
+	GLSL_MatricesUniformBuffer(buffer, update, HUDBUFFER_ORTHO_PROJECTION, hudOrthoProjectionMatrix);
 
 	//VR projection matrix
-	GLSL_MatricesUniformBuffer(buffer, VR_PROJECTION, tr.vrParms.projection);
+	GLSL_MatricesUniformBuffer(buffer, update, VR_PROJECTION, tr.vrParms.projection);
 
 	//Mirror VR projection matrix
-	GLSL_MatricesUniformBuffer(buffer, MIRROR_VR_PROJECTION, tr.vrParms.mirrorProjection);
+	GLSL_MatricesUniformBuffer(buffer, update, MIRROR_VR_PROJECTION, tr.vrParms.mirrorProjection);
 
 	//Used for drawing models
-	GLSL_MatricesUniformBuffer(buffer, MONO_VR_PROJECTION, tr.vrParms.monoVRProjection);
+	GLSL_MatricesUniformBuffer(buffer, update, MONO_VR_PROJECTION, tr.vrParms.monoVRProjection);
 }
 
 void GLSL_PrepareUniformBuffers(void)
 {
-	GLSL_UniformMatrixBuffers(matrixBuffer);
-	if (!VR_RenderMotionVector())
-	{
-		GLSL_UniformMatrixBuffers(prevMatrixBuffer);
-	}
+    if (VR_RenderMotionVector())
+    {
+        GLSL_UniformMatrixBuffers(prevMatrixBuffer, qfalse);
+    }
+	GLSL_UniformMatrixBuffers(matrixBuffer, qtrue);
 }
 
 void GLSL_BindProgram(shaderProgram_t * program)

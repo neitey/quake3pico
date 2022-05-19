@@ -3,7 +3,7 @@
 setlocal
 
 set BUILD_TYPE=release
-set VERSION=1.0.0-rc1
+set VERSION=1.1.0
 
 @REM Define the following environment variables to sign a release build
 @REM set KEYSTORE=

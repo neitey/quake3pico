@@ -160,7 +160,7 @@ static char* netnames[] = {
 	NULL
 };
 
-static char quake3questMessage[] = "Visit quake3.quakevr.com - For the Team Beef Discord invite for news/events/chat";
+static char quake3questMessage[] = "Meetups: 21h CET (EU) / 9pm EST (USA). stats.quakevr.com for server status.";
 
 const char* punkbuster_items[] = {
 	"Disabled",
@@ -194,6 +194,7 @@ typedef struct servernode_s {
 	int		minPing;
 	int		maxPing;
 	qboolean bPB;
+	qboolean demo;
 
 } servernode_t; 
 
@@ -395,7 +396,6 @@ static void ArenaServers_UpdatePicture( void ) {
 		servernodeptr = g_arenaservers.table[g_arenaservers.list.curvalue].servernode;
 		Com_sprintf( picname, sizeof(picname), "levelshots/%s.tga", servernodeptr->mapname );
 		g_arenaservers.mappic.generic.name = picname;
-	
 	}
 
 	// force shader update during draw
@@ -500,7 +500,17 @@ static void ArenaServers_UpdateMenu( void ) {
 		return;
 	}
 
-	// build list box strings - apply culling filters
+    //Specify should always be grayed out
+    g_arenaservers.specify.generic.flags	|= QMF_GRAYED;
+
+    servernode_t*	servernode;
+    servernode = g_arenaservers.table[g_arenaservers.list.curvalue].servernode;
+    if( servernode && uis.demoversion && !servernode->demo) {
+        //Demo pak cannot connect to a non-demo server
+        g_arenaservers.go.generic.flags			|= QMF_GRAYED;
+    }
+
+    // build list box strings - apply culling filters
 	servernodeptr = g_arenaservers.serverlist;
 	count         = *g_arenaservers.numservers;
 	for( i = 0, j = 0; i < count; i++, servernodeptr++ ) {
@@ -562,10 +572,20 @@ static void ArenaServers_UpdateMenu( void ) {
 			pingColor = S_COLOR_RED;
 		}
 
-		Com_sprintf( buff, MAX_LISTBOXWIDTH, "%-20.20s %-12.12s %2d/%2d %-8.8s %4s%s%3d " S_COLOR_YELLOW "%s", 
-			servernodeptr->hostname, servernodeptr->mapname, servernodeptr->numclients,
- 			servernodeptr->maxclients, servernodeptr->gamename,
-			netnames[servernodeptr->nettype], pingColor, servernodeptr->pingtime, servernodeptr->bPB ? "Yes" : "No" );
+		if (uis.demoversion && !servernodeptr->demo)
+        {
+            Com_sprintf( buff, MAX_LISTBOXWIDTH, S_COLOR_MID_GREY "%-20.20s %-12.12s %2d/%2d %-8.8s %4s%s%3d " S_COLOR_YELLOW "%s",
+                         servernodeptr->hostname, servernodeptr->mapname, servernodeptr->numclients,
+                         servernodeptr->maxclients, servernodeptr->gamename,
+                         netnames[servernodeptr->nettype], pingColor, servernodeptr->pingtime, servernodeptr->bPB ? "Yes" : "No" );
+        }
+        else
+        {
+            Com_sprintf( buff, MAX_LISTBOXWIDTH, "%-20.20s %-12.12s %2d/%2d %-8.8s %4s%s%3d " S_COLOR_YELLOW "%s",
+                         servernodeptr->hostname, servernodeptr->mapname, servernodeptr->numclients,
+                         servernodeptr->maxclients, servernodeptr->gamename,
+                         netnames[servernodeptr->nettype], pingColor, servernodeptr->pingtime, servernodeptr->bPB ? "Yes" : "No" );
+        }
 		j++;
 	}
 
@@ -682,6 +702,7 @@ static void ArenaServers_Insert( char* adrstr, char* info, int pingtime )
 	servernodeptr->minPing    = atoi( Info_ValueForKey( info, "minPing") );
 	servernodeptr->maxPing    = atoi( Info_ValueForKey( info, "maxPing") );
 	servernodeptr->bPB = atoi( Info_ValueForKey( info, "punkbuster") );
+    servernodeptr->demo =     (strcasestr(info, "demo") != NULL);
 
 	/*
 	s = Info_ValueForKey( info, "nettype" );
@@ -1239,6 +1260,17 @@ static void ArenaServers_Event( void* ptr, int event ) {
 	case ID_LIST:
 		if( event == QM_GOTFOCUS ) {
 			ArenaServers_UpdatePicture();
+
+            servernode_t*	servernode;
+            servernode = g_arenaservers.table[g_arenaservers.list.curvalue].servernode;
+            if( servernode && uis.demoversion && !servernode->demo) {
+                //Demo pak cannot connect to a non-demo server
+                g_arenaservers.go.generic.flags			|= QMF_GRAYED;
+            }
+            else
+            {
+                g_arenaservers.go.generic.flags			&= ~QMF_GRAYED;
+            }
 		}
 		break;
 
@@ -1583,8 +1615,8 @@ static void ArenaServers_MenuInit( void ) {
 	Menu_AddItem( &g_arenaservers.menu, (void*) &g_arenaservers.create );
 	Menu_AddItem( &g_arenaservers.menu, (void*) &g_arenaservers.go );
 
-	Menu_AddItem( &g_arenaservers.menu, (void*) &g_arenaservers.punkbuster );
-	Menu_AddItem( &g_arenaservers.menu, (void*) &g_arenaservers.pblogo );
+//	Menu_AddItem( &g_arenaservers.menu, (void*) &g_arenaservers.punkbuster );
+//	Menu_AddItem( &g_arenaservers.menu, (void*) &g_arenaservers.pblogo );
 	
 	ArenaServers_LoadFavorites();
 
@@ -1602,7 +1634,7 @@ static void ArenaServers_MenuInit( void ) {
 	g_emptyservers = Com_Clamp( 0, 1, ui_browserShowEmpty.integer );
 	g_arenaservers.showempty.curvalue = g_emptyservers;
 	
-	g_arenaservers.punkbuster.curvalue = Com_Clamp( 0, 1, trap_Cvar_VariableValue( "cl_punkbuster" ) );
+//	g_arenaservers.punkbuster.curvalue = Com_Clamp( 0, 1, trap_Cvar_VariableValue( "cl_punkbuster" ) );
 
 	// force to initial state and refresh
 	g_arenaservers.master.curvalue = g_servertype = ArenaServers_SetType(g_servertype);
@@ -1631,7 +1663,7 @@ void ArenaServers_Cache( void ) {
 	trap_R_RegisterShaderNoMip( ART_ARROWS_UP );
 	trap_R_RegisterShaderNoMip( ART_ARROWS_DOWN );
 	trap_R_RegisterShaderNoMip( ART_UNKNOWNMAP );
-	trap_R_RegisterShaderNoMip( ART_PUNKBUSTER );
+//	trap_R_RegisterShaderNoMip( ART_PUNKBUSTER );
 }
 
 

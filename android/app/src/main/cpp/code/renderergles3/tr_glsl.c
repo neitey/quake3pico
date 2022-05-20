@@ -146,6 +146,7 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_FogColorMask", GLSL_VEC4 },
 
 	{ "u_ModelMatrix",   GLSL_MAT16 },
+    { "u_PrevModelMatrix",   GLSL_MAT16 },
 
 	{ "u_Time",          GLSL_FLOAT },
 	{ "u_VertexLerp" ,   GLSL_FLOAT },

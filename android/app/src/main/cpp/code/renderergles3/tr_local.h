@@ -105,6 +105,8 @@ typedef struct {
 	vec3_t		ambientLight;	// color normalized to 0-255
 	int			ambientLightInt;	// 32 bit rgba packed
 	vec3_t		directedLight;
+
+	float		prevModelMatrix[16];
 } trRefEntity_t;
 
 
@@ -677,6 +679,7 @@ typedef enum
 	UNIFORM_FOGCOLORMASK,
 
 	UNIFORM_MODELMATRIX,
+	UNIFORM_PREVMODELMATRIX,
 
 	UNIFORM_TIME,
 	UNIFORM_VERTEXLERP,
@@ -1396,6 +1399,7 @@ typedef struct {
 	vao_t          *currentVao;
 
 	mat4_t        modelMatrix;
+	mat4_t        prevModelMatrix;
 	mat4_t        projection;
 	qboolean 		isDrawingHUD;
 } glstate_t;
@@ -1937,6 +1941,7 @@ void	GL_CheckErrs( char *file, int line );
 #define GL_CheckErrors(...) GL_CheckErrs(__FILE__, __LINE__)
 void	GL_State( unsigned long stateVector );
 void    GL_SetProjectionMatrix(mat4_t matrix);
+void    GL_SetPrevModelMatrix(mat4_t matrix);
 void    GL_SetModelMatrix(mat4_t matrix);
 void	GL_Cull( int cullType );
 

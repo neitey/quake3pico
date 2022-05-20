@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 backEndData_t	*backEndData;
 backEndState_t	backEnd;
+float		prevModelMatrix[16];
 
 static float	s_flipMatrix[16] = {
 	// convert from our coordinate system (looking down X)
@@ -277,6 +278,11 @@ void GL_SetModelMatrix(mat4_t matrix)
 	Mat4Copy(matrix, glState.modelMatrix);
 }
 
+void GL_SetPrevModelMatrix(mat4_t matrix)
+{
+	Mat4Copy(matrix, glState.prevModelMatrix);
+}
+
 
 /*
 ================
@@ -361,12 +367,11 @@ void RB_BeginDrawingView (void) {
 	// ensures that depth writes are enabled for the depth clear
 	GL_State( GLS_DEFAULT );
 	// clear relevant buffers
-	//TODO:resolve GL_ERROR
-    /*if( VR_RenderMotionVector() )
+    if( VR_RenderMotionVector() )
     {
         clearBits = 0;
     }
-    else*/
+    else
     {
         clearBits = GL_DEPTH_BUFFER_BIT;
     }
@@ -520,6 +525,11 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
+            if (!VR_RenderMotionVector()) {
+                memcpy( &backEnd.currentEntity->prevModelMatrix[0], &backEnd.or.modelMatrix[0], sizeof(float) * 16);
+            } else {
+				GL_SetPrevModelMatrix( backEnd.currentEntity->prevModelMatrix );
+            }
 			GL_SetModelMatrix( backEnd.or.modelMatrix );
             GL_SetProjectionMatrix( backEnd.viewParms.projectionMatrix );
 
@@ -570,7 +580,11 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		FBO_Bind(fbo);
 
 	// go back to the world model matrix
-
+	if (!VR_RenderMotionVector()) {
+		memcpy( &prevModelMatrix[0], &backEnd.viewParms.world.modelMatrix[0], sizeof(float) * 16);
+	} else {
+		GL_SetPrevModelMatrix( prevModelMatrix );
+	}
 	GL_SetModelMatrix( backEnd.viewParms.world.modelMatrix );
 
 #ifdef __ANDROID__
@@ -717,6 +731,7 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 	GLSL_BindProgram(&tr.textureColorShader);
 
 	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_MODELMATRIX, glState.modelMatrix);
+	GLSL_SetUniformMat4(&tr.textureColorShader, UNIFORM_PREVMODELMATRIX, glState.prevModelMatrix);
     GLSL_BindBuffers(&tr.textureColorShader);
 	GLSL_SetUniformVec4(&tr.textureColorShader, UNIFORM_COLOR, colorWhite);
 

@@ -505,9 +505,9 @@ void VR_DrawFrame( engine_t* engine ) {
 
         if (vr_spacewarp->integer) {
             renderMotionVector = qtrue;
-            VR_RenderScene( engine, fov, qfalse );
-            renderMotionVector = qfalse;
             VR_RenderScene( engine, fov, qtrue );
+            renderMotionVector = qfalse;
+            VR_RenderScene( engine, fov, qfalse );
         } else {
             VR_RenderScene( engine, fov, qfalse );
         }
@@ -548,7 +548,7 @@ void VR_DrawFrame( engine_t* engine ) {
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.width = frameBuffer->MotionVectorDepthSwapChain.Width;
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.height = frameBuffer->MotionVectorDepthSwapChain.Height;
                 proj_spacewarp_views[eye].depthSubImage.imageArrayIndex = eye;
-                proj_spacewarp_views[eye].appSpaceDeltaPose = prevInvViewTransform[eye]; //TODO:XrPosef_Multiply(prevInvViewTransform[eye], viewTransform[eye]);
+                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(prevInvViewTransform[eye], viewTransform[eye]);
 
                 proj_spacewarp_views[eye].minDepth = 0.0f;
                 proj_spacewarp_views[eye].maxDepth = 1.0f;

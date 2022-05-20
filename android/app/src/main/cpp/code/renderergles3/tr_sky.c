@@ -426,6 +426,7 @@ static void DrawSkySide( struct image_s *image, const int mins[2], const int max
 		GLSL_BindProgram(sp);
 
 		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
+		GLSL_SetUniformMat4(sp, UNIFORM_PREVMODELMATRIX, glState.prevModelMatrix);
 		GLSL_BindBuffers(sp);
 		
 		color[0] = 

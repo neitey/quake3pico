@@ -5,6 +5,7 @@ attribute vec4 attr_Color;
 attribute vec4 attr_TexCoord0;
 
 uniform mat4 u_ModelMatrix;
+uniform mat4 u_PrevModelMatrix;
 
 
 uniform vec4   u_BaseColor;
@@ -32,7 +33,7 @@ void main()
 	vec3 normal    = attr_Normal;
 
 	clipPos = u_ViewProjectionMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0));
-	prevClipPos = u_PrevViewProjectionMatrices[gl_ViewID_OVR] * (u_ModelMatrix * vec4(position, 1.0));
+	prevClipPos = u_PrevViewProjectionMatrices[gl_ViewID_OVR] * (u_PrevModelMatrix * vec4(position, 1.0));
 
     var_DiffuseTex = attr_TexCoord0.st;
 	var_Color = u_VertColor * attr_Color + u_BaseColor;

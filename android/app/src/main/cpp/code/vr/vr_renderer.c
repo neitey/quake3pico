@@ -503,11 +503,13 @@ void VR_DrawFrame( engine_t* engine ) {
             fullscreenMode = qfalse;
         }
 
-        VR_RenderScene( engine, fov, qfalse );
         if (vr_spacewarp->integer) {
             renderMotionVector = qtrue;
-            VR_RenderScene( engine, fov, qtrue );
+            VR_RenderScene( engine, fov, qfalse );
             renderMotionVector = qfalse;
+            VR_RenderScene( engine, fov, qtrue );
+        } else {
+            VR_RenderScene( engine, fov, qfalse );
         }
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {

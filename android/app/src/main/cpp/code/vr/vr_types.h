@@ -84,12 +84,6 @@ typedef struct {
     XrSpace CurrentSpace;
     GLboolean SessionActive;
 
-    float* SupportedDisplayRefreshRates;
-    uint32_t RequestedDisplayRefreshRateIndex;
-    uint32_t NumSupportedDisplayRefreshRates;
-    PFN_xrGetDisplayRefreshRateFB pfnGetDisplayRefreshRate;
-    PFN_xrRequestDisplayRefreshRateFB pfnRequestDisplayRefreshRate;
-
     int SwapInterval;
     // These threads will be marked as performance threads.
     int MainThreadTid;

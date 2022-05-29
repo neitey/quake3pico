@@ -240,11 +240,6 @@ void ovrApp_Clear(ovrApp* app) {
     app->FakeStageSpace = XR_NULL_HANDLE;
     app->CurrentSpace = XR_NULL_HANDLE;
     app->SessionActive = false;
-    app->SupportedDisplayRefreshRates = NULL;
-    app->RequestedDisplayRefreshRateIndex = 0;
-    app->NumSupportedDisplayRefreshRates = 0;
-    app->pfnGetDisplayRefreshRate = NULL;
-    app->pfnRequestDisplayRefreshRate = NULL;
     app->SwapInterval = 1;
     memset(app->Layers, 0, sizeof(ovrCompositorLayer_Union) * ovrMaxLayerCount);
     app->LayerCount = 0;
@@ -256,10 +251,6 @@ void ovrApp_Clear(ovrApp* app) {
 }
 
 void ovrApp_Destroy(ovrApp* app) {
-    if (app->SupportedDisplayRefreshRates != NULL) {
-        free(app->SupportedDisplayRefreshRates);
-    }
-
     ovrApp_Clear(app);
 }
 
@@ -351,14 +342,6 @@ GLboolean ovrApp_HandleXrEvents(ovrApp* app) {
                         perf_settings_event->subDomain,
                         perf_settings_event->fromLevel,
                         perf_settings_event->toLevel);
-            } break;
-            case XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB: {
-                const XrEventDataDisplayRefreshRateChangedFB* refresh_rate_changed_event =
-                        (XrEventDataDisplayRefreshRateChangedFB*)(baseEventHeader);
-                ALOGV(
-                        "xrPollEvent: received XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB event: fromRate %f -> toRate %f",
-                        refresh_rate_changed_event->fromDisplayRefreshRate,
-                        refresh_rate_changed_event->toDisplayRefreshRate);
             } break;
             case XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING: {
                 XrEventDataReferenceSpaceChangePending* ref_space_change_event =

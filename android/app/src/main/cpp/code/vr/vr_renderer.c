@@ -225,48 +225,6 @@ void VR_InitRenderer( engine_t* engine ) {
     OXR(xrGetViewConfigurationProperties(
             engine->appState.Instance, engine->appState.SystemId, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, &engine->appState.ViewportConfig));
 
-    // Get the supported display refresh rates for the system.
-    {
-        PFN_xrEnumerateDisplayRefreshRatesFB pfnxrEnumerateDisplayRefreshRatesFB = NULL;
-        OXR(xrGetInstanceProcAddr(
-                engine->appState.Instance,
-                "xrEnumerateDisplayRefreshRatesFB",
-                (PFN_xrVoidFunction*)(&pfnxrEnumerateDisplayRefreshRatesFB)));
-
-        OXR(pfnxrEnumerateDisplayRefreshRatesFB(
-                engine->appState.Session, 0, &engine->appState.NumSupportedDisplayRefreshRates, NULL));
-
-        engine->appState.SupportedDisplayRefreshRates =
-                (float*)malloc(engine->appState.NumSupportedDisplayRefreshRates * sizeof(float));
-        OXR(pfnxrEnumerateDisplayRefreshRatesFB(
-                engine->appState.Session,
-                engine->appState.NumSupportedDisplayRefreshRates,
-                &engine->appState.NumSupportedDisplayRefreshRates,
-                engine->appState.SupportedDisplayRefreshRates));
-        ALOGV("Supported Refresh Rates:");
-        for (uint32_t i = 0; i < engine->appState.NumSupportedDisplayRefreshRates; i++) {
-            ALOGV("%d:%f", i, engine->appState.SupportedDisplayRefreshRates[i]);
-        }
-
-        OXR(xrGetInstanceProcAddr(
-                engine->appState.Instance,
-                "xrGetDisplayRefreshRateFB",
-                (PFN_xrVoidFunction*)(&engine->appState.pfnGetDisplayRefreshRate)));
-
-        float currentDisplayRefreshRate = 0.0f;
-        OXR(engine->appState.pfnGetDisplayRefreshRate(engine->appState.Session, &currentDisplayRefreshRate));
-        ALOGV("Current System Display Refresh Rate: %f", currentDisplayRefreshRate);
-
-        OXR(xrGetInstanceProcAddr(
-                engine->appState.Instance,
-                "xrRequestDisplayRefreshRateFB",
-                (PFN_xrVoidFunction*)(&engine->appState.pfnRequestDisplayRefreshRate)));
-
-        // Test requesting the system default.
-        OXR(engine->appState.pfnRequestDisplayRefreshRate(engine->appState.Session, 0.0f));
-        ALOGV("Requesting system default display refresh rate");
-    }
-
     uint32_t numOutputSpaces = 0;
     OXR(xrEnumerateReferenceSpaces(engine->appState.Session, 0, &numOutputSpaces, NULL));
 

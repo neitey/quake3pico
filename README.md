@@ -1,11 +1,11 @@
-# Quake 3 Port to Oculus Quest
+# Quake 3 Port to Pico Neo 3
 
 ## Building
 
 ### Prerequisites
 1. Install your copy of Quake III Arena from Steam.
 2. Android Studio with NDK version 21.1.6352462.
-3. Download the Oculus OpenXR SDK from https://developer.pico-interactive.com/sdk/index?device_id=1&platform_id=3
+3. Download the Pico OpenXR SDK from https://developer.pico-interactive.com/sdk/index?device_id=1&platform_id=3
 4. Extract the OpenXR folder to ./android/app/src/main/cpp/code/OpenXR/
 
 ### Building and running the build

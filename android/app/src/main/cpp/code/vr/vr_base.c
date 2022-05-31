@@ -53,6 +53,10 @@ engine_t* VR_Init( ovrJava java )
 
     ovrApp_Clear(&vr_engine.appState);
 
+    XrInstanceCreateInfoAndroidKHR instanceCreateInfoAndroid = {XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR};
+    instanceCreateInfoAndroid.applicationVM = java.Vm;
+    instanceCreateInfoAndroid.applicationActivity = java.ActivityObject;
+
     PFN_xrInitializeLoaderKHR xrInitializeLoaderKHR;
     xrGetInstanceProcAddr(
             XR_NULL_HANDLE, "xrInitializeLoaderKHR", (PFN_xrVoidFunction*)&xrInitializeLoaderKHR);
@@ -78,7 +82,7 @@ engine_t* VR_Init( ovrJava java )
     XrInstanceCreateInfo instanceCreateInfo;
     memset(&instanceCreateInfo, 0, sizeof(instanceCreateInfo));
     instanceCreateInfo.type = XR_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.next = NULL;
+    instanceCreateInfo.next = (XrBaseInStructure*)&instanceCreateInfoAndroid;
     instanceCreateInfo.createFlags = 0;
     instanceCreateInfo.applicationInfo = appInfo;
     instanceCreateInfo.enabledApiLayerCount = 0;

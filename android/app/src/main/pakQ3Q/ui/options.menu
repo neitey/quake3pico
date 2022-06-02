@@ -266,7 +266,7 @@ itemDef {
       		type ITEM_TYPE_MULTI
 		text "HUD Mode:"
 		cvar "vr_hudDrawStatus"
-		cvarFloatList { "Off" 0 "Floating" 1 "Fixed to View" 2 }
+		cvarFloatList { "Off" 0 "Floating" 1 "Simple" 2 }
 		rect 99 315 256 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 128

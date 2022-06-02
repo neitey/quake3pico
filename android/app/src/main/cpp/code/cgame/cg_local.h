@@ -499,8 +499,6 @@ typedef struct {
 
 	qboolean	renderingThirdPerson;		// during deaths, chasecams, etc
 
-	qboolean	drawingHUD;
-
 	// prediction state
 	qboolean	hyperspace;				// true if prediction has hit a trigger_teleport
 	playerState_t	predictedPlayerState;
@@ -835,8 +833,6 @@ typedef struct {
 	qhandle_t	invulnerabilityPowerupModel;
 #endif
 
-	qhandle_t	hudShader;
-
 	// scoreboard headers
 	qhandle_t	scoreboardName;
 	qhandle_t	scoreboardPing;
@@ -1147,6 +1143,8 @@ extern	vmCvar_t		cg_crosshairX;
 extern	vmCvar_t		cg_crosshairY;
 extern	vmCvar_t		cg_crosshairSize;
 extern	vmCvar_t		cg_crosshairHealth;
+extern	vmCvar_t		cg_drawStatus;
+extern	vmCvar_t		cg_draw2D;
 extern	vmCvar_t		cg_animSpeed;
 extern	vmCvar_t		cg_debugAnim;
 extern	vmCvar_t		cg_debugPosition;
@@ -1546,7 +1544,6 @@ int			trap_Milliseconds( void );
 void		trap_Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultValue, int flags );
 void		trap_Cvar_Update( vmCvar_t *vmCvar );
 void		trap_Cvar_Set( const char *var_name, const char *value );
-void		trap_Cvar_SetValue( const char *var_name, const float value );
 void		trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
 float 		trap_Cvar_VariableValue( const char *var_name );
 
@@ -1661,9 +1658,6 @@ int			trap_R_LerpTag( orientation_t *tag, clipHandle_t mod, int startFrame, int 
 					   float frac, const char *tagName );
 void		trap_R_RemapShader( const char *oldShader, const char *newShader, const char *timeOffset );
 qboolean	trap_R_inPVS( const vec3_t p1, const vec3_t p2 );
-
-void		trap_R_HUDBufferStart( qboolean clear );
-void		trap_R_HUDBufferEnd( void );
 
 // The glconfig_t will not change during the life of a cgame.
 // If it needs to change, the entire cgame will be restarted, because

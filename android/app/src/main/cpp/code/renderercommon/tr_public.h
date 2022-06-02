@@ -68,8 +68,6 @@ typedef struct {
 	void	(*AddLightToScene)( const vec3_t org, float intensity, float r, float g, float b );
 	void	(*AddAdditiveLightToScene)( const vec3_t org, float intensity, float r, float g, float b );
 	void	(*RenderScene)( const refdef_t *fd );
-	void	(*HUDBufferStart)( qboolean clear );
-	void	(*HUDBufferEnd)( void );
 
 	void	(*SetColor)( const float *rgba );	// NULL = 1,1,1,1
 	void	(*DrawStretchPic) ( float x, float y, float w, float h, 
@@ -86,8 +84,7 @@ typedef struct {
 
 #if __ANDROID__
 	void	(*SetVRHeadsetParms)( const float projectionMatrix[4][4],
-								  const float nonVRProjectionMatrix[4][4],
-								  int renderBuffer );
+			int renderBufferL, int renderBufferR );
 #endif
 
 	int		(*MarkFragments)( int numPoints, const vec3_t *points, const vec3_t projection,

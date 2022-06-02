@@ -171,15 +171,27 @@ static void Controls3_MenuEvent( void* ptr, int notification ) {
 					trap_Cvar_Set("vr_button_map_PRIMARYGRIP", "+weapon_select"); // weapon selector
 					trap_Cvar_Set("vr_button_map_PRIMARYTHUMBSTICK", ""); // unmapped
 					trap_Cvar_Set("vr_button_map_RTHUMBFORWARD_ALT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDRIGHT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDRIGHT_ALT", ""); // unmapped
 					trap_Cvar_Set("vr_button_map_RTHUMBRIGHT_ALT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKRIGHT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKRIGHT_ALT", ""); // unmapped
 					trap_Cvar_Set("vr_button_map_RTHUMBBACK_ALT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKLEFT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKLEFT_ALT", ""); // unmapped
 					trap_Cvar_Set("vr_button_map_RTHUMBLEFT_ALT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDLEFT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDLEFT_ALT", ""); // unmapped
 					break;
 				case 1: // Weapon wheel on thumbstick - all directions as weapon select (useful for HMD wheel)
 					trap_Cvar_Set("vr_button_map_RTHUMBFORWARD", "+weapon_select");
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDRIGHT", "+weapon_select");
 					trap_Cvar_Set("vr_button_map_RTHUMBRIGHT", "+weapon_select");
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKRIGHT", "+weapon_select");
 					trap_Cvar_Set("vr_button_map_RTHUMBBACK", "+weapon_select");
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKLEFT", "+weapon_select");
 					trap_Cvar_Set("vr_button_map_RTHUMBLEFT", "+weapon_select");
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDLEFT", "+weapon_select");
 					trap_Cvar_Set("vr_button_map_PRIMARYTHUMBSTICK", "+weapon_select");
 					trap_Cvar_Set("vr_button_map_PRIMARYGRIP", "+alt"); // switch to alt layout
 					trap_Cvar_Set("vr_button_map_RTHUMBLEFT_ALT", "turnleft"); // turn left
@@ -190,6 +202,10 @@ static void Controls3_MenuEvent( void* ptr, int notification ) {
 					} else {
 						trap_Cvar_Set("vr_button_map_RTHUMBBACK_ALT", "blank");
 					}
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDRIGHT_ALT", "blank"); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKRIGHT_ALT", "blank"); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKLEFT_ALT", "blank"); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDLEFT_ALT", "blank"); // unmapped
 					break;
 				default: // Weapon wheel disabled - only prev/next weapon switch is active
 					trap_Cvar_Set("vr_button_map_RTHUMBLEFT", "turnleft"); // turn left
@@ -203,9 +219,17 @@ static void Controls3_MenuEvent( void* ptr, int notification ) {
 					trap_Cvar_Set("vr_button_map_PRIMARYGRIP", "+alt"); // switch to alt layout
 					trap_Cvar_Set("vr_button_map_PRIMARYTHUMBSTICK", ""); // unmapped
 					trap_Cvar_Set("vr_button_map_RTHUMBFORWARD_ALT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDRIGHT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDRIGHT_ALT", ""); // unmapped
 					trap_Cvar_Set("vr_button_map_RTHUMBRIGHT_ALT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKRIGHT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKRIGHT_ALT", ""); // unmapped
 					trap_Cvar_Set("vr_button_map_RTHUMBBACK_ALT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKLEFT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBBACKLEFT_ALT", ""); // unmapped
 					trap_Cvar_Set("vr_button_map_RTHUMBLEFT_ALT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDLEFT", ""); // unmapped
+					trap_Cvar_Set("vr_button_map_RTHUMBFORWARDLEFT_ALT", ""); // unmapped
 					break;
 			}
 		}
@@ -213,19 +237,6 @@ static void Controls3_MenuEvent( void* ptr, int notification ) {
         break;
 
 	case ID_SWITCHTHUMBSTICKS:
-		{
-			if (s_controls3.switchthumbsticks.curvalue) {
-				trap_Cvar_Set("vr_button_map_A", "+button2"); // Use Item
-				trap_Cvar_Set("vr_button_map_B", "+button3"); // Gesture
-				trap_Cvar_Set("vr_button_map_X", "+moveup"); // Jump
-				trap_Cvar_Set("vr_button_map_Y", "+movedown"); // Crouch
-			} else {
-				trap_Cvar_Set("vr_button_map_A", "+moveup"); // Jump
-				trap_Cvar_Set("vr_button_map_B", "+movedown"); // Crouch
-				trap_Cvar_Set("vr_button_map_X", "+button2"); // Use Item
-				trap_Cvar_Set("vr_button_map_Y", "+button3"); // Gesture
-			}
-		}
 		trap_Cvar_SetValue( "vr_switchThumbsticks", s_controls3.switchthumbsticks.curvalue );
 		break;
 
@@ -255,8 +266,8 @@ static void Controls3_MenuInit( void ) {
 
 	static const char *s_weaponselectormode[] =
 			{
-					"VR Style / Pointing",
-					"Classic / Thumbstick",
+					"Controller Based",
+					"HMD/Thumbstick Based",
 					NULL
 			};
 

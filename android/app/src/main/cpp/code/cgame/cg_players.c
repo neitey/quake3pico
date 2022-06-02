@@ -1692,7 +1692,7 @@ static void CG_PlayerFlag( centity_t *cent, qhandle_t hSkin, refEntity_t *torso 
 	int			legsAnim, flagAnim, updateangles;
 	float		angle, d;
 
-    // show the flag pole model
+	// show the flag pole model
 	memset( &pole, 0, sizeof(pole) );
 	pole.hModel = cgs.media.flagPoleModel;
 	VectorCopy( torso->lightingOrigin, pole.lightingOrigin );
@@ -1908,7 +1908,7 @@ static void CG_PlayerPowerups( centity_t *cent, refEntity_t *torso ) {
 	ci = &cgs.clientinfo[ cent->currentState.clientNum ];
 	// redflag
 	if ( powerups & ( 1 << PW_REDFLAG ) ) {
-		if (ci->newAnims && cent->currentState.clientNum != vr->clientNum) {
+		if (ci->newAnims) {
 			CG_PlayerFlag( cent, cgs.media.redFlagFlapSkin, torso );
 		}
 		else {
@@ -1921,7 +1921,7 @@ static void CG_PlayerPowerups( centity_t *cent, refEntity_t *torso ) {
 
 	// blueflag
 	if ( powerups & ( 1 << PW_BLUEFLAG ) ) {
-		if (ci->newAnims && cent->currentState.clientNum != vr->clientNum){
+		if (ci->newAnims){
 			CG_PlayerFlag( cent, cgs.media.blueFlagFlapSkin, torso );
 		}
 		else {
@@ -1934,7 +1934,7 @@ static void CG_PlayerPowerups( centity_t *cent, refEntity_t *torso ) {
 
 	// neutralflag
 	if ( powerups & ( 1 << PW_NEUTRALFLAG ) ) {
-		if (ci->newAnims && cent->currentState.clientNum != vr->clientNum) {
+		if (ci->newAnims) {
 			CG_PlayerFlag( cent, cgs.media.neutralFlagFlapSkin, torso );
 		}
 		else {

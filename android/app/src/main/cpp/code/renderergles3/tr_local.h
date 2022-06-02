@@ -35,11 +35,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_postprocess.h"
 #include "../renderercommon/iqm.h"
 #include "../renderercommon/qgl.h"
-#include "../vr/vr_clientinfo.h"
-
-extern cvar_t *vr_hudDepth;
-extern cvar_t *vr_hudDrawStatus;
-extern vr_clientinfo_t vr;
 
 #define GLE(ret, name, ...) extern name##proc * qgl##name;
 QGL_1_1_PROCS;
@@ -113,8 +108,7 @@ typedef struct {
 	vec3_t		axis[3];		// orientation in world
 	vec3_t		viewOrigin;		// viewParms->or.origin in local coordinates
 	float		modelMatrix[16];
-	float		modelView[16];
-    float       eyeViewMatrix[2][16];
+	float		transformMatrix[16];
 } orientationr_t;
 
 // Ensure this is >= the ATTR_INDEX_COUNT enum below
@@ -677,6 +671,7 @@ typedef enum
 	UNIFORM_FOGCOLORMASK,
 
 	UNIFORM_MODELMATRIX,
+	UNIFORM_MODELVIEWPROJECTIONMATRIX,
 
 	UNIFORM_TIME,
 	UNIFORM_VERTEXLERP,
@@ -719,10 +714,6 @@ typedef struct shaderProgram_s
 	GLuint          fragmentShader;
 	uint32_t        attribs;	// vertex array attributes
 
-	//New for multiview - The view and projection matrix uniforms
-	GLuint		projectionMatrixBinding;
-	GLuint		viewMatricesBinding;
-
 	// uniform parameters
 	GLint uniforms[UNIFORM_COUNT];
 	short uniformBufferOffsets[UNIFORM_COUNT]; // max 32767/64=511 uniforms
@@ -737,7 +728,7 @@ typedef struct {
 	vec3_t		vieworg;
 	vec3_t		viewaxis[3];		// transformation matrix
 
-	qboolean    isHUD;
+	stereoFrame_t	stereoFrame;
 
 	int			time;				// time in milliseconds for shader effects and other time dependent rendering issues
 	int			rdflags;			// RDF_NOWORLDMODEL, etc
@@ -845,15 +836,14 @@ typedef struct {
 	vec3_t		visBounds[2];
 	float		zFar;
 	float       zNear;
-    stereoFrame_t	stereoFrame;
+	stereoFrame_t	stereoFrame;
 } viewParms_t;
 
 typedef struct {
 	qboolean	valid;
 	float		projection[16];
-	float		mirrorProjection[16];
-	float		monoVRProjection[16];
-	int			renderBuffer;
+	int			renderBufferL;
+	int			renderBufferR;
 	int			renderBufferOriginal;
 } vrParms_t;
 
@@ -1394,10 +1384,9 @@ typedef struct {
 	uint32_t        vertexAttribsEnabled;  // global if no VAOs, tess only otherwise
 	FBO_t          *currentFBO;
 	vao_t          *currentVao;
-
-	mat4_t        modelMatrix;
+	mat4_t        modelview;
 	mat4_t        projection;
-	qboolean 		isDrawingHUD;
+	mat4_t		modelviewProjection;
 } glstate_t;
 
 typedef enum {
@@ -1538,7 +1527,6 @@ typedef struct {
 	image_t					*renderImage;
 	image_t					*sunRaysImage;
 	image_t					*renderDepthImage;
-	image_t					*hudDepthImage;
 	image_t					*pshadowMaps[MAX_DRAWN_PSHADOWS];
 	image_t					*screenScratchImage;
 	image_t					*textureScratchImage[2];
@@ -1551,8 +1539,7 @@ typedef struct {
 	image_t                 *screenSsaoImage;
 	image_t					*hdrDepthImage;
 	image_t                 *renderCubeImage;
-	image_t                 *hudImage;
-
+	
 	image_t					*textureDepthImage;
 
 	FBO_t					*renderFbo;
@@ -1570,7 +1557,6 @@ typedef struct {
 	FBO_t					*screenSsaoFbo;
 	FBO_t					*hdrDepthFbo;
 	FBO_t                   *renderCubeFbo;
-	FBO_t                   *hudFbo;
 
 	shader_t				*defaultShader;
 	shader_t				*shadowShader;
@@ -1579,8 +1565,6 @@ typedef struct {
 	shader_t				*flareShader;
 	shader_t				*sunShader;
 	shader_t				*sunFlareShader;
-
-	shader_t				*hudShader;
 
 	int						numLightmaps;
 	int						lightmapSize;
@@ -1598,8 +1582,6 @@ typedef struct {
 	int						currentEntityNum;
 	int						shiftedEntityNum;	// currentEntityNum << QSORT_REFENTITYNUM_SHIFT
 	model_t					*currentModel;
-
-	int                     backupFrameBuffer;
 
 	//
 	// GPU shader programs
@@ -1936,7 +1918,7 @@ void	GL_CheckErrs( char *file, int line );
 #define GL_CheckErrors(...) GL_CheckErrs(__FILE__, __LINE__)
 void	GL_State( unsigned long stateVector );
 void    GL_SetProjectionMatrix(mat4_t matrix);
-void    GL_SetModelMatrix(mat4_t matrix);
+void    GL_SetModelviewMatrix(mat4_t matrix, qboolean applyStereoView);
 void	GL_Cull( int cullType );
 
 #define GLS_SRCBLEND_ZERO						0x00000001
@@ -2253,11 +2235,9 @@ GLSL
 */
 
 void GLSL_InitGPUShaders(void);
-void GLSL_PrepareUniformBuffers(void);
 void GLSL_ShutdownGPUShaders(void);
 void GLSL_VertexAttribPointers(uint32_t attribBits);
 void GLSL_BindProgram(shaderProgram_t * program);
-void GLSL_BindBuffers( shaderProgram_t * program );
 
 void GLSL_SetUniformInt(shaderProgram_t *program, int uniformNum, GLint value);
 void GLSL_SetUniformFloat(shaderProgram_t *program, int uniformNum, GLfloat value);
@@ -2330,7 +2310,7 @@ int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
 =============================================================
 =============================================================
 */
-void	R_TransformModelToClip( const vec3_t src, const float *viewMatrix, const float *projectionMatrix,
+void	R_TransformModelToClip( const vec3_t src, const float *modelMatrix, const float *projectionMatrix,
 							vec4_t eye, vec4_t dst );
 void	R_TransformClipToWindow( const vec4_t clip, const viewParms_t *view, vec4_t normalized, vec4_t window );
 
@@ -2471,12 +2451,6 @@ typedef struct {
 	stereoFrame_t stereoFrame;
 } switchEyeCommand_t;
 
-typedef struct {
-	int commandId;
-	qboolean start;
-	qboolean clear; // Clear the buffer?
-} hudBufferCommand_t;
-
 typedef enum {
 	RC_END_OF_LIST,
 	RC_SET_COLOR,
@@ -2491,8 +2465,7 @@ typedef enum {
 	RC_CAPSHADOWMAP,
 	RC_POSTPROCESS,
 	RC_EXPORT_CUBEMAPS,
-	RC_SWITCH_EYE,
-	RC_HUD_BUFFER
+	RC_SWITCH_EYE
 } renderCommand_t;
 
 
@@ -2536,12 +2509,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame );
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec );
 #if __ANDROID__
 void RE_SetVRHeadsetParms( const float projectionMatrix[4][4],
-						   const float nonVRProjectionMatrix[4][4],
-						   int renderBuffer );
+        int renderBufferL, int renderBufferR );
 #endif
-void RE_HUDBufferStart( qboolean clear );
-void RE_HUDBufferEnd( void );
-
 void RE_SaveJPG(char * filename, int quality, int image_width, int image_height,
                 unsigned char *image_buffer, int padding);
 size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality,

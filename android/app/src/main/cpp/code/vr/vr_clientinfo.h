@@ -14,6 +14,7 @@ typedef struct {
 
     qboolean weapon_stabilised;
     qboolean weapon_zoomed;
+    qboolean show_console;
     float weapon_zoomLevel;
     qboolean right_handed;
     qboolean virtual_screen;

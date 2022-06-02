@@ -113,9 +113,8 @@ static void DrawTris (shaderCommands_t *input) {
 		vec4_t color;
 
 		GLSL_BindProgram(sp);
-
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-        GLSL_BindBuffers(sp);
+		
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 		VectorSet4(color, 1, 1, 1, 1);
 		GLSL_SetUniformVec4(sp, UNIFORM_COLOR, color);
 		GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
@@ -353,8 +352,7 @@ static void ProjectDlightTexture( void ) {
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-        GLSL_BindBuffers(sp);
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 
 		GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
 		
@@ -583,9 +581,9 @@ static void ComputeFogValues(vec4_t fogDistanceVector, vec4_t fogDepthVector, fl
 	fog = tr.world->fogs + tess.fogNum;
 
 	VectorSubtract( backEnd.or.origin, backEnd.viewParms.or.origin, local );
-	fogDistanceVector[0] = -backEnd.or.modelView[2];
-	fogDistanceVector[1] = -backEnd.or.modelView[6];
-	fogDistanceVector[2] = -backEnd.or.modelView[10];
+	fogDistanceVector[0] = -backEnd.or.modelMatrix[2];
+	fogDistanceVector[1] = -backEnd.or.modelMatrix[6];
+	fogDistanceVector[2] = -backEnd.or.modelMatrix[10];
 	fogDistanceVector[3] = DotProduct( local, backEnd.viewParms.or.axis[0] );
 
 	// scale the fog vectors based on the fog's thickness
@@ -693,8 +691,7 @@ static void ForwardDlight( void ) {
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-		GLSL_BindBuffers(sp);
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 		GLSL_SetUniformVec3(sp, UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
 		GLSL_SetUniformVec3(sp, UNIFORM_LOCALVIEWORIGIN, backEnd.or.viewOrigin);
 
@@ -756,8 +753,7 @@ static void ForwardDlight( void ) {
 		GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
 
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-		GLSL_BindBuffers(sp);
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
 
 		if (pStage->bundle[TB_DIFFUSEMAP].image[0])
 			R_BindAnimatedImageToTMU( &pStage->bundle[TB_DIFFUSEMAP], TB_DIFFUSEMAP);
@@ -848,8 +844,7 @@ static void ProjectPshadowVBOGLSL( void ) {
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-		GLSL_BindBuffers(sp);
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 
 		VectorCopy(origin, vector);
 		vector[3] = 1.0f;
@@ -925,8 +920,7 @@ static void RB_FogPass( void ) {
 
 	fog = tr.world->fogs + tess.fogNum;
 
-	GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-	GLSL_BindBuffers(sp);
+	GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 
 	GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
 
@@ -1100,8 +1094,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-		GLSL_BindBuffers(sp);
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
 		GLSL_SetUniformVec3(sp, UNIFORM_VIEWORIGIN, backEnd.viewParms.or.origin);
 		GLSL_SetUniformVec3(sp, UNIFORM_LOCALVIEWORIGIN, backEnd.or.viewOrigin);
 
@@ -1217,8 +1210,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			}
 		}
 
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-		GLSL_BindBuffers(sp);
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
 
 		GLSL_SetUniformVec4(sp, UNIFORM_NORMALSCALE, pStage->normalScale);
 
@@ -1421,8 +1413,9 @@ static void RB_RenderShadowmap( shaderCommands_t *input )
 
 		GLSL_BindProgram(sp);
 
-		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, glState.modelMatrix);
-		GLSL_BindBuffers(sp);
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+
+		GLSL_SetUniformMat4(sp, UNIFORM_MODELMATRIX, backEnd.or.transformMatrix);
 
 		GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
 

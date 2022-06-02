@@ -25,8 +25,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <string.h> // memcpy
 
-#include "../vr/vr_base.h"
-
 trGlobals_t		tr;
 
 static float	s_flipMatrix[16] = {
@@ -38,8 +36,6 @@ static float	s_flipMatrix[16] = {
 	0, 0, 0, 1
 };
 
-extern cvar_t *vr_worldscale;
-extern cvar_t *vr_worldscaleScaler;
 
 refimport_t	ri;
 
@@ -429,16 +425,16 @@ R_TransformModelToClip
 
 ==========================
 */
-void R_TransformModelToClip( const vec3_t src, const float *viewMatrix, const float *projectionMatrix,
+void R_TransformModelToClip( const vec3_t src, const float *modelMatrix, const float *projectionMatrix,
 							vec4_t eye, vec4_t dst ) {
 	int i;
 
 	for ( i = 0 ; i < 4 ; i++ ) {
 		eye[i] = 
-			src[0] * viewMatrix[ i + 0 * 4 ] +
-			src[1] * viewMatrix[ i + 1 * 4 ] +
-			src[2] * viewMatrix[ i + 2 * 4 ] +
-			1 * viewMatrix[ i + 3 * 4 ];
+			src[0] * modelMatrix[ i + 0 * 4 ] +
+			src[1] * modelMatrix[ i + 1 * 4 ] +
+			src[2] * modelMatrix[ i + 2 * 4 ] +
+			1 * modelMatrix[ i + 3 * 4 ];
 	}
 
 	for ( i = 0 ; i < 4 ; i++ ) {
@@ -536,8 +532,8 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms,
 	glMatrix[11] = 0;
 	glMatrix[15] = 1;
 
-    myGlMultMatrix( glMatrix, viewParms->world.modelMatrix, or->modelMatrix );
-    myGlMultMatrix( glMatrix, viewParms->world.modelView, or->modelView );
+	Mat4Copy(glMatrix, or->transformMatrix);
+	myGlMultMatrix( glMatrix, viewParms->world.modelMatrix, or->modelMatrix );
 
 	// calculate the viewer origin in the model's space
 	// needed for fog, specular, and environment mapping
@@ -570,6 +566,7 @@ Sets up the modelview matrix for a given viewParm
 void R_RotateForViewer (void) 
 {
 	float	viewerMatrix[16];
+	vec3_t	origin;
 
 	Com_Memset (&tr.or, 0, sizeof(tr.or));
 	tr.or.axis[0][0] = 1;
@@ -577,64 +574,35 @@ void R_RotateForViewer (void)
 	tr.or.axis[2][2] = 1;
 	VectorCopy (tr.viewParms.or.origin, tr.or.viewOrigin);
 
-	for (int eye = 0; eye <= 2; ++eye)
-	{
-		// transform by the camera placement
-		vec3_t	origin;
-		VectorCopy(tr.viewParms.or.origin, origin);
+	// transform by the camera placement
+	VectorCopy( tr.viewParms.or.origin, origin );
 
-		if ((eye < 2) && !VR_useScreenLayer())
-		{
-			float scale = ((r_stereoSeparation->value / 1000.0f) / 2.0f) * vr_worldscale->value * vr_worldscaleScaler->value;
-			VectorMA(origin, (eye == 0 ? 1.0f : -1.0f) * scale, tr.viewParms.or.axis[1], origin);
-		}
+	viewerMatrix[0] = tr.viewParms.or.axis[0][0];
+	viewerMatrix[4] = tr.viewParms.or.axis[0][1];
+	viewerMatrix[8] = tr.viewParms.or.axis[0][2];
+	viewerMatrix[12] = -origin[0] * viewerMatrix[0] + -origin[1] * viewerMatrix[4] + -origin[2] * viewerMatrix[8];
 
-		viewerMatrix[0] = tr.viewParms.or.axis[0][0];
-		viewerMatrix[4] = tr.viewParms.or.axis[0][1];
-		viewerMatrix[8] = tr.viewParms.or.axis[0][2];
-		viewerMatrix[12] = -origin[0] * viewerMatrix[0] + -origin[1] * viewerMatrix[4] +
-						   -origin[2] * viewerMatrix[8];
+	viewerMatrix[1] = tr.viewParms.or.axis[1][0];
+	viewerMatrix[5] = tr.viewParms.or.axis[1][1];
+	viewerMatrix[9] = tr.viewParms.or.axis[1][2];
+	viewerMatrix[13] = -origin[0] * viewerMatrix[1] + -origin[1] * viewerMatrix[5] + -origin[2] * viewerMatrix[9];
 
-		viewerMatrix[1] = tr.viewParms.or.axis[1][0];
-		viewerMatrix[5] = tr.viewParms.or.axis[1][1];
-		viewerMatrix[9] = tr.viewParms.or.axis[1][2];
-		viewerMatrix[13] = -origin[0] * viewerMatrix[1] + -origin[1] * viewerMatrix[5] +
-						   -origin[2] * viewerMatrix[9];
+	viewerMatrix[2] = tr.viewParms.or.axis[2][0];
+	viewerMatrix[6] = tr.viewParms.or.axis[2][1];
+	viewerMatrix[10] = tr.viewParms.or.axis[2][2];
+	viewerMatrix[14] = -origin[0] * viewerMatrix[2] + -origin[1] * viewerMatrix[6] + -origin[2] * viewerMatrix[10];
 
-		viewerMatrix[2] = tr.viewParms.or.axis[2][0];
-		viewerMatrix[6] = tr.viewParms.or.axis[2][1];
-		viewerMatrix[10] = tr.viewParms.or.axis[2][2];
-		viewerMatrix[14] = -origin[0] * viewerMatrix[2] + -origin[1] * viewerMatrix[6] +
-						   -origin[2] * viewerMatrix[10];
+	viewerMatrix[3] = 0;
+	viewerMatrix[7] = 0;
+	viewerMatrix[11] = 0;
+	viewerMatrix[15] = 1;
 
-		viewerMatrix[3] = 0;
-		viewerMatrix[7] = 0;
-		viewerMatrix[11] = 0;
-		viewerMatrix[15] = 1;
-
-		// convert from our coordinate system (looking down X)
-		// to OpenGL's coordinate system (looking down -Z)
-		if (eye < 2)
-		{
-			myGlMultMatrix(viewerMatrix, s_flipMatrix, tr.or.eyeViewMatrix[eye]);
-		}
-		else
-		{
-			//World Model View
-			Mat4Copy(viewerMatrix, tr.or.modelMatrix);
-			myGlMultMatrix(viewerMatrix, s_flipMatrix, tr.or.modelView);
-		}
-	}
+	// convert from our coordinate system (looking down X)
+	// to OpenGL's coordinate system (looking down -Z)
+	myGlMultMatrix( viewerMatrix, s_flipMatrix, tr.or.modelMatrix );
 
 	tr.viewParms.world = tr.or;
 
-#if 0
-	Com_Printf("Origin = %g, %g, %g", tr.or.modelView[12], tr.or.modelView[13], tr.or.modelView[14]);
-	//Com_Printf("Origin = %g, %g, %g", tr.viewParms.or.origin[0], tr.viewParms.or.origin[1], tr.viewParms.or.origin[2]);
-	Com_Printf("Axis 0 = %g, %g, %g", tr.viewParms.or.axis[0][0], tr.viewParms.or.axis[0][1], tr.viewParms.or.axis[0][2]);
-	Com_Printf("Axis 1 = %g, %g, %g", tr.viewParms.or.axis[1][0], tr.viewParms.or.axis[1][1], tr.viewParms.or.axis[1][2]);
-	Com_Printf("Axis 2 = %g, %g, %g", tr.viewParms.or.axis[2][0], tr.viewParms.or.axis[2][1], tr.viewParms.or.axis[2][2]);
-#endif
 }
 
 /*
@@ -747,11 +715,60 @@ R_SetupProjection
 */
 void R_SetupProjection(viewParms_t *dest, float zProj, float zFar, qboolean computeFrustum)
 {
-	memcpy(&dest->projectionMatrix, &tr.vrParms.projection, sizeof(dest->projectionMatrix));
+	float	xmin, xmax, ymin, ymax;
+	float	width, height, stereoSep = r_stereoSeparation->value;
 
+	ymax = zProj * tan(dest->fovY * M_PI / 360.0f);
+	ymin = -ymax;
+
+	xmax = zProj * tan(dest->fovX * M_PI / 360.0f);
+	xmin = -xmax;
+
+	width = xmax - xmin;
+	height = ymax - ymin;
+
+	if (tr.vrParms.valid) {
+/*		if (dest->stereoFrame == STEREO_LEFT) {
+			memcpy(&dest->projectionMatrix, &tr.vrParms.projectionL, sizeof(dest->projectionMatrix));
+		}
+		else */
+		{
+			memcpy(&dest->projectionMatrix, &tr.vrParms.projection, sizeof(dest->projectionMatrix));
+		}
+	} else {
+		/*
+		 * offset the view origin of the viewer for stereo rendering 
+		 * by setting the projection matrix appropriately.
+		 */
+		if(stereoSep != 0)
+		{
+			if(dest->stereoFrame == STEREO_LEFT)
+				stereoSep = zProj / stereoSep;
+			else if(dest->stereoFrame == STEREO_RIGHT)
+				stereoSep = zProj / -stereoSep;
+			else
+				stereoSep = 0;
+		}
+
+		dest->projectionMatrix[0] = 2 * zProj / width;
+		dest->projectionMatrix[4] = 0;
+		dest->projectionMatrix[8] = (xmax + xmin + 2 * stereoSep) / width;
+		dest->projectionMatrix[12] = 2 * zProj * stereoSep / width;
+
+		dest->projectionMatrix[1] = 0;
+		dest->projectionMatrix[5] = 2 * zProj / height;
+		dest->projectionMatrix[9] = ( ymax + ymin ) / height;	// normally 0
+		dest->projectionMatrix[13] = 0;
+
+		dest->projectionMatrix[3] = 0;
+		dest->projectionMatrix[7] = 0;
+		dest->projectionMatrix[11] = -1;
+		dest->projectionMatrix[15] = 0;
+	}
+	
 	// Now that we have all the data for the projection matrix we can also setup the view frustum.
 	if(computeFrustum)
-		R_SetupFrustum( );
+		R_SetupFrustum( );//dest, xmin, xmax, ymax, zProj, zFar, stereoSep);
 }
 
 /*
@@ -783,8 +800,6 @@ void R_SetupProjectionZ(viewParms_t *dest)
 		float	plane2[4];
 		vec4_t q, c;
 
-		Mat4Copy(tr.vrParms.projection, tr.vrParms.mirrorProjection);
-
 		// transform portal plane into camera space
 		plane[0] = dest->portalPlane.normal[0];
 		plane[1] = dest->portalPlane.normal[1];
@@ -805,10 +820,11 @@ void R_SetupProjectionZ(viewParms_t *dest)
 
 		VectorScale4(plane2, 2.0f / DotProduct4(plane2, q), c);
 
-		tr.vrParms.mirrorProjection[2]  = c[0];
-		tr.vrParms.mirrorProjection[6]  = c[1];
-		tr.vrParms.mirrorProjection[10] = c[2] + 1.0f;
-		tr.vrParms.mirrorProjection[14] = c[3];
+		dest->projectionMatrix[2]  = c[0];
+		dest->projectionMatrix[6]  = c[1];
+		dest->projectionMatrix[10] = c[2] + 1.0f;
+		dest->projectionMatrix[14] = c[3];
+
 	}
 
 }
@@ -1180,7 +1196,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 		int j;
 		unsigned int pointFlags = 0;
 
-		R_TransformModelToClip( tess.xyz[i], tr.or.modelView, tr.viewParms.projectionMatrix, eye, clip );
+		R_TransformModelToClip( tess.xyz[i], tr.or.modelMatrix, tr.viewParms.projectionMatrix, eye, clip );
 
 		for ( j = 0; j < 3; j++ )
 		{
@@ -1521,7 +1537,7 @@ static void R_AddEntitySurface (int entityNum)
 	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_REFENTITYNUM_SHIFT;
 
 	//
-	// the weapon model (and HUD sprite) must be handled special --
+	// the weapon model must be handled special --
 	// we don't want the hacked weapon position showing in 
 	// mirrors, because the true body position will already be drawn
 	//
@@ -1718,10 +1734,7 @@ void R_RenderView (viewParms_t *parms) {
 	// set viewParms.world
 	R_RotateForViewer ();
 
-	//can we get away without this?!
-    //GLSL_PrepareUniformBuffers();
-
-    R_SetupProjection(&tr.viewParms, r_zproj->value, tr.viewParms.zFar, qtrue);
+	R_SetupProjection(&tr.viewParms, r_zproj->value, tr.viewParms.zFar, qtrue);
 
 	R_GenerateDrawSurfs();
 
@@ -2506,7 +2519,7 @@ void R_RenderSunShadowMaps(const refdef_t *fd, int level)
 			R_SortDrawSurfs( tr.refdef.drawSurfs + firstDrawSurf, tr.refdef.numDrawSurfs - firstDrawSurf );
 		}
 
-		Mat4Multiply(tr.viewParms.projectionMatrix, tr.viewParms.world.modelView, tr.refdef.sunShadowMvp[level]);
+		Mat4Multiply(tr.viewParms.projectionMatrix, tr.viewParms.world.modelMatrix, tr.refdef.sunShadowMvp[level]);
 	}
 }
 

@@ -279,7 +279,6 @@ itemDef {
 		textscale .25
       		forecolor 1 1 1 1
       		visible 1
-      		action { uiScript update "vr_switchThumbsticks" }
     		}
 
 	itemDef {
@@ -303,7 +302,7 @@ itemDef {
       		type ITEM_TYPE_MULTI
 		text "Weapon Wheel Mode:"
 		cvar "vr_weaponSelectorMode"
-		cvarFloatList { "VR Style / Pointing" 0 "Classic / Thumbstick" 1 }
+		cvarFloatList { "Controller Based" 0 "HMD/Thumbstick Based" 1 }
 		rect 30 182 200 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 143
@@ -403,9 +402,10 @@ itemDef {
 itemDef {
       		name controls				
 		group grpControls
-      		type ITEM_TYPE_SLIDER
+      		type ITEM_TYPE_MULTI
 		text "HUD Depth:"
-		cvarfloat "vr_hudDepth" 1 0 5
+		cvar "vr_hudDepth"
+		cvarFloatList { "Very Close" 0 "Close" 1 "Middle" 2 "Further" 3 "Far" 4 "Distant" 5 }
 		rect 30 331 200 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 143
@@ -418,7 +418,7 @@ itemDef {
       		name controls				
 		group grpControls
       		type ITEM_TYPE_SLIDER
-		text "HUD Vertical Position:"
+		text "HUD Y Offset:"
 		cvarfloat "vr_hudYOffset" 20 -200 200
 		rect 30 351 200 20
       		textalign ITEM_ALIGN_RIGHT

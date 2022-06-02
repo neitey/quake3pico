@@ -81,6 +81,24 @@ itemDef {
 	decoration  	  
     	}
 
+
+//	itemDef {
+//    	name graphics
+//		group grpSystem
+//		text "Quality:"
+//   		type ITEM_TYPE_MULTI
+//		cvar "ui_glCustom"
+//		cvarFloatList { "High Quality" 0 "Normal" 1 "Fast" 2 "Fastest" 3 "Custom" 4 }
+//		rect 99 42 256 20
+//   		textalign ITEM_ALIGN_RIGHT
+//   		textalignx 128
+//   		textaligny 20
+//		textscale .333
+//   		forecolor 1 1 1 1
+//   		visible 0
+//		action { uiScript update "ui_glCustom" }
+//	}
+
 	itemDef {
   		name graphics
 		group grpSystem
@@ -97,12 +115,29 @@ itemDef {
    		visible 0 
 	}
 
+//	itemDef {
+//   		name graphics
+//		group grpSystem
+//   		type ITEM_TYPE_MULTI
+//		text "Color Depth:"
+//		cvar "r_colorbits"
+//		cvarFloatList { "Desktop Default" 0 "16-bit" 16 "32-bit" 32 }
+//		rect 99 92 256 20
+//    		textalign ITEM_ALIGN_RIGHT
+//      		textalignx 128
+//      		textaligny 20
+//		textscale .333
+//      		forecolor 1 1 1 1
+//      		visible 0
+//		action { uiScript glCustom ; uiScript update "r_colorbits" }
+//	}
+
 	itemDef {
    		name graphics
 		group grpSystem
    		type ITEM_TYPE_SLIDER
 		text "Brightness:"
-		cvarfloat "r_gamma" 0.05 0.6 1.0
+		cvarfloat "r_gamma" 0.05 0.8 1.2
 		rect 99 67 256 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 128
@@ -118,7 +153,7 @@ itemDef {
    		type ITEM_TYPE_MULTI
 		text "Railgun Effect:"
 		cvar "cg_oldRail"
-		cvarFloatList { "Q2 Style" 0 "Q3 Style" 1 }
+		cvarFloatList { "High" 0 "Low" 1 }
 		rect 99 92 256 20
    		textalign ITEM_ALIGN_RIGHT
   		textalignx 128
@@ -134,7 +169,7 @@ itemDef {
       		type ITEM_TYPE_MULTI			
 		text "Lighting:"
 		cvar "r_vertexlight"
-		cvarFloatList { "Lightmap (High)" 0 "Vertex (Low)" 1  }
+		cvarFloatList { "Light Map (high)" 0 "Vertex (low)" 1  }
 		rect 99 117 256 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 128
@@ -146,13 +181,28 @@ itemDef {
 	}
 
 	itemDef {
+      		name graphics
+		group grpSystem
+      		type ITEM_TYPE_YESNO
+		text "Dynamic Lights:"
+		cvar "r_dynamiclight"
+		rect 99 142 256 20
+      		textalign ITEM_ALIGN_RIGHT
+      		textalignx 128
+      		textaligny 20
+		textscale .333
+      		forecolor 1 1 1 1
+      		visible 1 
+    		}
+
+	itemDef {
   		name graphics
 		group grpSystem
    		type ITEM_TYPE_MULTI
 		text "Opponent Shadows:"
 		cvar "cg_shadows"
 		cvarFloatList { "None" 0 "Low" 1 "High" 3 }
-		rect 99 142 256 20
+		rect 99 167 256 20
    		textalign ITEM_ALIGN_RIGHT
   		textalignx 128
    		textaligny 20
@@ -168,7 +218,7 @@ itemDef {
 		text "Player Shadow:"
 		cvar "cg_playerShadow"
 		cvarFloatList { "None" 0 "Low" 1 "High" 3 }
-		rect 99 167 256 20
+		rect 99 192 256 20
    		textalign ITEM_ALIGN_RIGHT
   		textalignx 128
    		textaligny 20
@@ -184,7 +234,7 @@ itemDef {
 		text "Geometric Detail:"
 		cvar "r_lodbias"
 		cvarFloatList { "High" -1 "Medium" 1 "Low" 2 }
-		rect 99 192 256 20
+		rect 99 217 256 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 128
       		textaligny 20
@@ -201,7 +251,7 @@ itemDef {
 		text "Texture Detail:"
 		cvar "r_picmip"
 		cvarFloatList { "Low" 2 "Normal" 1 "High" 0 }
-		rect 99 217 256 20
+		rect 99 242 256 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 128
       		textaligny 20
@@ -210,6 +260,39 @@ itemDef {
       		visible 0 
 		action { uiScript glCustom }
 	}
+	
+//	itemDef {
+//      		name graphics
+//		group grpSystem
+//      		type ITEM_TYPE_MULTI
+//		text "Texture Quality:"
+//		cvar "r_texturebits"
+//		cvarFloatList { "Default" 0 "16 bit" 16 "32 bit" 32 }
+//		rect 99 242 256 20
+//      		textalign ITEM_ALIGN_RIGHT
+//      		textalignx 128
+//      		textaligny 20
+//		textscale .333
+//      		forecolor 1 1 1 1
+//      		visible 0
+//   	}
+
+//	itemDef {
+//      		name graphics
+//		group grpSystem
+//      		type ITEM_TYPE_MULTI
+//		text "Texture Filter:"
+//		cvar "r_texturemode"
+//		cvarStrList { "Bilinear", "GL_LINEAR_MIPMAP_NEAREST", "Trilinear", "GL_LINEAR_MIPMAP_LINEAR"  }
+//		rect 99 267 256 20
+//      		textalign ITEM_ALIGN_RIGHT
+//      		textalignx 128
+//      		textaligny 20
+//		textscale .333
+//      		forecolor 1 1 1 1
+//      		visible 0
+//		action { uiScript glCustom }
+//		}
 
 	itemDef {
       		name graphics
@@ -217,31 +300,15 @@ itemDef {
       		type ITEM_TYPE_YESNO
 		text "Compress Textures:"
 		cvar "r_ext_compressed_textures"
-		rect 99 242 256 20
-      		textalign ITEM_ALIGN_RIGHT
-      		textalignx 128
-      		textaligny 20
-		textscale .333
-      		forecolor 1 1 1 1
-      		visible 0
-		action { uiScript glCustom }
-		}
-
-	itemDef {
-      		name graphics
-		group grpSystem
-      		type ITEM_TYPE_YESNO
-		text "Low Quality Sky:"
-		cvar "r_fastsky"
 		rect 99 267 256 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 128
       		textaligny 20
-		textscale .333
+		textscale .333        
       		forecolor 1 1 1 1
-      		visible 0
+      		visible 0 
 		action { uiScript glCustom }
-    	}
+		}
 
 itemDef {
 	name graphics

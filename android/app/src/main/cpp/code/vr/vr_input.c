@@ -24,7 +24,7 @@ XrAction handPoseLeftAction;
 XrAction handPoseRightAction;
 XrAction indexLeftAction;
 XrAction indexRightAction;
-XrAction menuAction;
+//XrAction menuAction;
 XrAction buttonAAction;
 XrAction buttonBAction;
 XrAction buttonXAction;
@@ -35,8 +35,8 @@ XrAction moveOnLeftJoystickAction;
 XrAction moveOnRightJoystickAction;
 XrAction thumbstickLeftClickAction;
 XrAction thumbstickRightClickAction;
-XrAction vibrateLeftFeedback;
-XrAction vibrateRightFeedback;
+//XrAction vibrateLeftFeedback;
+//XrAction vibrateRightFeedback;
 XrActionSet runningActionSet;
 XrSpace leftControllerAimSpace = XR_NULL_HANDLE;
 XrSpace rightControllerAimSpace = XR_NULL_HANDLE;
@@ -250,7 +250,7 @@ void VR_Vibrate( int duration, int chan, float intensity )
 
 
 static void VR_processHaptics() {
-    static float lastFrameTime = 0.0f;
+    /*static float lastFrameTime = 0.0f;
     float timestamp = (float)(Sys_Milliseconds( ));
     float frametime = timestamp - lastFrameTime;
     lastFrameTime = timestamp;
@@ -288,7 +288,7 @@ static void VR_processHaptics() {
             hapticActionInfo.action = i == 0 ? vibrateLeftFeedback : vibrateRightFeedback;
             OXR(xrStopHapticFeedback(VR_GetEngine()->appState.Session, &hapticActionInfo));
         }
-    }
+    }*/
 }
 
 static qboolean IN_GetInputAction(const char* inputName, char* action)
@@ -626,7 +626,7 @@ void IN_VRInit( void )
     runningActionSet = CreateActionSet(1, "running_action_set", "Action Set used on main loop");
     indexLeftAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "index_left", "Index left", 0, NULL);
     indexRightAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "index_right", "Index right", 0, NULL);
-    menuAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "menu_action", "Menu", 0, NULL);
+    //menuAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "menu_action", "Menu", 0, NULL);
     buttonAAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_a", "Button A", 0, NULL);
     buttonBAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_b", "Button B", 0, NULL);
     buttonXAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_x", "Button X", 0, NULL);
@@ -637,8 +637,8 @@ void IN_VRInit( void )
     moveOnRightJoystickAction = CreateAction(runningActionSet, XR_ACTION_TYPE_VECTOR2F_INPUT, "move_on_right_joy", "Move on right Joy", 0, NULL);
     thumbstickLeftClickAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "thumbstick_left", "Thumbstick left", 0, NULL);
     thumbstickRightClickAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "thumbstick_right", "Thumbstick right", 0, NULL);
-    vibrateLeftFeedback = CreateAction(runningActionSet, XR_ACTION_TYPE_VIBRATION_OUTPUT, "vibrate_left_feedback", "Vibrate Left Controller Feedback", 0, NULL);
-    vibrateRightFeedback = CreateAction(runningActionSet, XR_ACTION_TYPE_VIBRATION_OUTPUT, "vibrate_right_feedback", "Vibrate Right Controller Feedback", 0, NULL);
+    //vibrateLeftFeedback = CreateAction(runningActionSet, XR_ACTION_TYPE_VIBRATION_OUTPUT, "vibrate_left_feedback", "Vibrate Left Controller Feedback", 0, NULL);
+    //vibrateRightFeedback = CreateAction(runningActionSet, XR_ACTION_TYPE_VIBRATION_OUTPUT, "vibrate_right_feedback", "Vibrate Right Controller Feedback", 0, NULL);
 
     OXR(xrStringToPath(engine->appState.Instance, "/user/hand/left", &leftHandPath));
     OXR(xrStringToPath(engine->appState.Instance, "/user/hand/right", &rightHandPath));
@@ -706,9 +706,9 @@ void IN_VRInit( void )
 
         {
             if (interactionProfilePath == interactionProfilePathTouch) {
-                bindings[currBinding++] = ActionSuggestedBinding(indexLeftAction, "/user/hand/left/input/trigger");
-                bindings[currBinding++] = ActionSuggestedBinding(indexRightAction, "/user/hand/right/input/trigger");
-                bindings[currBinding++] = ActionSuggestedBinding(menuAction, "/user/hand/left/input/menu/click");
+                bindings[currBinding++] = ActionSuggestedBinding(indexLeftAction, "/user/hand/left/input/trigger/value");
+                bindings[currBinding++] = ActionSuggestedBinding(indexRightAction, "/user/hand/right/input/trigger/value");
+                //bindings[currBinding++] = ActionSuggestedBinding(menuAction, "/user/hand/left/input/menu/click");
                 bindings[currBinding++] = ActionSuggestedBinding(buttonXAction, "/user/hand/left/input/x/click");
                 bindings[currBinding++] = ActionSuggestedBinding(buttonYAction, "/user/hand/left/input/y/click");
                 bindings[currBinding++] = ActionSuggestedBinding(buttonAAction, "/user/hand/right/input/a/click");
@@ -719,8 +719,8 @@ void IN_VRInit( void )
                 bindings[currBinding++] = ActionSuggestedBinding(moveOnRightJoystickAction, "/user/hand/right/input/thumbstick");
                 bindings[currBinding++] = ActionSuggestedBinding(thumbstickLeftClickAction, "/user/hand/left/input/thumbstick/click");
                 bindings[currBinding++] = ActionSuggestedBinding(thumbstickRightClickAction, "/user/hand/right/input/thumbstick/click");
-                bindings[currBinding++] = ActionSuggestedBinding(vibrateLeftFeedback, "/user/hand/left/output/haptic");
-                bindings[currBinding++] = ActionSuggestedBinding(vibrateRightFeedback, "/user/hand/right/output/haptic");
+                //bindings[currBinding++] = ActionSuggestedBinding(vibrateLeftFeedback, "/user/hand/left/output/haptic");
+                //bindings[currBinding++] = ActionSuggestedBinding(vibrateRightFeedback, "/user/hand/right/output/haptic");
                 bindings[currBinding++] = ActionSuggestedBinding(handPoseLeftAction, "/user/hand/left/input/aim/pose");
                 bindings[currBinding++] = ActionSuggestedBinding(handPoseRightAction, "/user/hand/right/input/aim/pose");
             }
@@ -730,8 +730,8 @@ void IN_VRInit( void )
                 bindings[currBinding++] = ActionSuggestedBinding(indexRightAction, "/user/hand/right/input/select/click");
                 bindings[currBinding++] = ActionSuggestedBinding(buttonAAction, "/user/hand/left/input/menu/click");
                 bindings[currBinding++] = ActionSuggestedBinding(buttonXAction, "/user/hand/right/input/menu/click");
-                bindings[currBinding++] = ActionSuggestedBinding(vibrateLeftFeedback, "/user/hand/left/output/haptic");
-                bindings[currBinding++] = ActionSuggestedBinding(vibrateRightFeedback, "/user/hand/right/output/haptic");
+                //bindings[currBinding++] = ActionSuggestedBinding(vibrateLeftFeedback, "/user/hand/left/output/haptic");
+                //bindings[currBinding++] = ActionSuggestedBinding(vibrateRightFeedback, "/user/hand/right/output/haptic");
                 bindings[currBinding++] = ActionSuggestedBinding(handPoseLeftAction, "/user/hand/left/input/aim/pose");
                 bindings[currBinding++] = ActionSuggestedBinding(handPoseRightAction, "/user/hand/right/input/aim/pose");
             }
@@ -751,7 +751,7 @@ void IN_VRInit( void )
         XrAction actionsToEnumerate[] = {
                 indexLeftAction,
                 indexRightAction,
-                menuAction,
+                //menuAction,
                 buttonAAction,
                 buttonBAction,
                 buttonXAction,
@@ -762,8 +762,8 @@ void IN_VRInit( void )
                 moveOnRightJoystickAction,
                 thumbstickLeftClickAction,
                 thumbstickRightClickAction,
-                vibrateLeftFeedback,
-                vibrateRightFeedback,
+                //vibrateLeftFeedback,
+                //vibrateRightFeedback,
                 handPoseLeftAction,
                 handPoseRightAction
         };
@@ -1327,7 +1327,7 @@ void IN_VRInputFrame( void )
 
     //button mapping
     uint32_t lButtons = 0;
-    if (GetActionStateBoolean(menuAction).currentState) lButtons |= ovrButton_Enter;
+    //if (GetActionStateBoolean(menuAction).currentState) lButtons |= ovrButton_Enter;
     if (GetActionStateBoolean(buttonXAction).currentState) lButtons |= ovrButton_X;
     if (GetActionStateBoolean(buttonYAction).currentState) lButtons |= ovrButton_Y;
     if (GetActionStateFloat(gripLeftAction).currentState > 0.5f) lButtons |= ovrButton_GripTrigger;
@@ -1341,11 +1341,11 @@ void IN_VRInputFrame( void )
     IN_VRButtons(qtrue, rButtons);
 
     //index finger click
-    XrActionStateBoolean indexState;
-    indexState = GetActionStateBoolean(indexLeftAction);
-    IN_VRTriggers(qfalse, indexState.currentState ? 1 : 0);
-    indexState = GetActionStateBoolean(indexRightAction);
-    IN_VRTriggers(qtrue, indexState.currentState ? 1 : 0);
+    XrActionStateFloat indexState;
+    indexState = GetActionStateFloat(indexLeftAction);
+    IN_VRTriggers(qfalse, indexState.currentState);
+    indexState = GetActionStateFloat(indexRightAction);
+    IN_VRTriggers(qtrue, indexState.currentState);
 
     //thumbstick
     XrActionStateVector2f moveJoystickState;

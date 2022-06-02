@@ -53,6 +53,9 @@ engine_t* VR_Init( ovrJava java )
 
     ovrApp_Clear(&vr_engine.appState);
 
+    // Create the EGL Context
+    ovrEgl_CreateContext(&vr_engine.appState.Egl, NULL);
+
     XrInstanceCreateInfoAndroidKHR instanceCreateInfoAndroid = {XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR};
     instanceCreateInfoAndroid.applicationVM = java.Vm;
     instanceCreateInfoAndroid.applicationActivity = java.ActivityObject;
@@ -280,6 +283,7 @@ void VR_Destroy( engine_t* engine )
 {
     if (engine == &vr_engine) {
         xrDestroyInstance(engine->appState.Instance);
+        ovrEgl_DestroyContext(&engine->appState.Egl);
         ovrApp_Destroy(&engine->appState);
     }
 }
@@ -295,9 +299,9 @@ void VR_EnterVR( engine_t* engine, ovrJava java ) {
     XrGraphicsBindingOpenGLESAndroidKHR graphicsBindingAndroidGLES = {};
     graphicsBindingAndroidGLES.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR;
     graphicsBindingAndroidGLES.next = NULL;
-    graphicsBindingAndroidGLES.display = eglGetCurrentDisplay();
-    graphicsBindingAndroidGLES.config = eglGetCurrentSurface(EGL_DRAW);
-    graphicsBindingAndroidGLES.context = eglGetCurrentContext();
+    graphicsBindingAndroidGLES.display = engine->appState.Egl.Display;
+    graphicsBindingAndroidGLES.config = engine->appState.Egl.Config;
+    graphicsBindingAndroidGLES.context = engine->appState.Egl.Context;
 
     XrSessionCreateInfo sessionCreateInfo = {};
     memset(&sessionCreateInfo, 0, sizeof(sessionCreateInfo));

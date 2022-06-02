@@ -403,7 +403,12 @@ void VR_DrawFrame( engine_t* engine ) {
         ovrFramebuffer_Acquire(frameBuffer);
         ovrFramebuffer_SetCurrent(frameBuffer);
         VR_ClearFrameBuffer(frameBuffer->ColorSwapChain.Width, frameBuffer->ColorSwapChain.Height);
-        Com_Frame();
+    }
+
+    Com_Frame();
+
+    for (int eye = 0; eye < ovrMaxNumEyes; eye++)
+    {
 
         // Clear the alpha channel, other way OpenXR would not transfer the framebuffer fully
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
@@ -411,6 +416,7 @@ void VR_DrawFrame( engine_t* engine ) {
         glClear(GL_COLOR_BUFFER_BIT);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
+        ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer[eye];
         ovrFramebuffer_Resolve(frameBuffer);
         ovrFramebuffer_Release(frameBuffer);
     }

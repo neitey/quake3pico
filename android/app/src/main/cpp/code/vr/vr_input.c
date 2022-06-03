@@ -624,8 +624,8 @@ void IN_VRInit( void )
 
     // Actions
     runningActionSet = CreateActionSet(1, "running_action_set", "Action Set used on main loop");
-    indexLeftAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "index_left", "Index left", 0, NULL);
-    indexRightAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "index_right", "Index right", 0, NULL);
+    indexLeftAction = CreateAction(runningActionSet, XR_ACTION_TYPE_FLOAT_INPUT, "index_left", "Index left", 0, NULL);
+    indexRightAction = CreateAction(runningActionSet, XR_ACTION_TYPE_FLOAT_INPUT, "index_right", "Index right", 0, NULL);
     //menuAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "menu_action", "Menu", 0, NULL);
     buttonAAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_a", "Button A", 0, NULL);
     buttonBAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_b", "Button B", 0, NULL);

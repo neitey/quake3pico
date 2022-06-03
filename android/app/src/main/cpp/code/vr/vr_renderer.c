@@ -285,7 +285,7 @@ void VR_ClearFrameBuffer( int width, int height)
     }
 
     glScissor( 0, 0, width, height );
-    glClear( GL_COLOR_BUFFER_BIT );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     glScissor( 0, 0, 0, 0 );
     glDisable( GL_SCISSOR_TEST );

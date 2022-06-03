@@ -515,7 +515,7 @@ static void IN_HandleInactiveInput(uint32_t * inputGroup, int inputFlag, char* i
 
 void VR_HapticEvent(const char* event, int position, int flags, int intensity, float angle, float yHeight )
 {
-    if (vr_hapticIntensity->value == 0.0f)
+    /*if (vr_hapticIntensity->value == 0.0f)
     {
         return;
     }
@@ -568,7 +568,7 @@ void VR_HapticEvent(const char* event, int position, int flags, int intensity, f
     {
         //Quick blip
         VR_Vibrate(50, (vr_righthanded->integer ? 2 : 1), 1.0);
-    }
+    }*/
 }
 
 XrActionSuggestedBinding ActionSuggestedBinding(XrAction action, XrPath path) {

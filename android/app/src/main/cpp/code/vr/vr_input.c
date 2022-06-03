@@ -328,7 +328,7 @@ static void VR_processHaptics() {
             vibration.amplitude = vibration_channel_intensity[i];
             vibration.duration = ToXrTime(vibration_channel_duration[i]);
             vibration.frequency = 3000;
-            XrHapticActionInfo hapticActionInfo;
+            XrHapticActionInfo hapticActionInfo = {};
             hapticActionInfo.type = XR_TYPE_HAPTIC_ACTION_INFO;
             hapticActionInfo.next = NULL;
             hapticActionInfo.action = vibrateAction;
@@ -345,7 +345,7 @@ static void VR_processHaptics() {
             }
         } else {
             // Stop haptics
-            XrHapticActionInfo hapticActionInfo;
+            XrHapticActionInfo hapticActionInfo = {};
             hapticActionInfo.type = XR_TYPE_HAPTIC_ACTION_INFO;
             hapticActionInfo.next = NULL;
             hapticActionInfo.action = vibrateAction;
@@ -622,7 +622,7 @@ void InitializeActions() {
 
     // Create an action set.
     {
-        XrActionSetCreateInfo actionSetInfo;
+        XrActionSetCreateInfo actionSetInfo = {};
         actionSetInfo.type = XR_TYPE_ACTION_SET_CREATE_INFO;
         strcpy(actionSetInfo.actionSetName, "gameplay");
         strcpy(actionSetInfo.localizedActionSetName, "Gameplay");
@@ -637,7 +637,7 @@ void InitializeActions() {
     // Create actions.
     {
         // Create an input action for grabbing objects with the left and right hands.
-        XrActionCreateInfo actionInfo;
+        XrActionCreateInfo actionInfo = {};
         actionInfo.type = XR_TYPE_ACTION_CREATE_INFO;
         actionInfo.actionType = XR_ACTION_TYPE_FLOAT_INPUT;
         strcpy(actionInfo.actionName, "grab_object");
@@ -954,7 +954,7 @@ void InitializeActions() {
          bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_RIGHT]);
          bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
          bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
-         XrInteractionProfileSuggestedBinding suggestedBindings;
+         XrInteractionProfileSuggestedBinding suggestedBindings = {};
          suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
          suggestedBindings.interactionProfile = khrSimpleInteractionProfilePath;
          suggestedBindings.suggestedBindings = bindings;
@@ -975,7 +975,7 @@ void InitializeActions() {
          bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_LEFT]);
          bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
          bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
-         XrInteractionProfileSuggestedBinding suggestedBindings;
+         XrInteractionProfileSuggestedBinding suggestedBindings = {};
          suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
          suggestedBindings.interactionProfile = oculusTouchInteractionProfilePath;
          suggestedBindings.suggestedBindings = bindings;
@@ -995,7 +995,7 @@ void InitializeActions() {
          bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_RIGHT]);
          bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
          bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
-         XrInteractionProfileSuggestedBinding suggestedBindings;
+         XrInteractionProfileSuggestedBinding suggestedBindings = {};
          suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
          suggestedBindings.interactionProfile = viveControllerInteractionProfilePath;
          suggestedBindings.suggestedBindings = bindings;
@@ -1016,7 +1016,7 @@ void InitializeActions() {
          bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_RIGHT]);
          bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
          bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
-         XrInteractionProfileSuggestedBinding suggestedBindings;
+         XrInteractionProfileSuggestedBinding suggestedBindings = {};
          suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
          suggestedBindings.interactionProfile = microsoftMixedRealityInteractionProfilePath;
          suggestedBindings.suggestedBindings = bindings.data();
@@ -1069,7 +1069,7 @@ void InitializeActions() {
         bindings[currBinding++] = ActionSuggestedBinding(aimAction, aimPath[SIDE_LEFT]);
         bindings[currBinding++] = ActionSuggestedBinding(aimAction, aimPath[SIDE_RIGHT]);
 
-        XrInteractionProfileSuggestedBinding suggestedBindings;
+        XrInteractionProfileSuggestedBinding suggestedBindings = {};
         suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
         suggestedBindings.interactionProfile = picoMixedRealityInteractionProfilePath;
         suggestedBindings.suggestedBindings = bindings;
@@ -1077,7 +1077,7 @@ void InitializeActions() {
         CHECK_XRCMD(xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings));
     }
 
-    XrActionSpaceCreateInfo actionSpaceInfo;
+    XrActionSpaceCreateInfo actionSpaceInfo = {};
     actionSpaceInfo.type = XR_TYPE_ACTION_SPACE_CREATE_INFO;
     actionSpaceInfo.action = poseAction;
     actionSpaceInfo.poseInActionSpace.orientation.w = 1.f;
@@ -1092,7 +1092,7 @@ void InitializeActions() {
     actionSpaceInfo.subactionPath = handSubactionPath[SIDE_RIGHT];
     CHECK_XRCMD(xrCreateActionSpace(engine->appState.Session, &actionSpaceInfo, &aimSpace[SIDE_RIGHT]));
 
-    XrSessionActionSetsAttachInfo attachInfo;
+    XrSessionActionSetsAttachInfo attachInfo = {};
     attachInfo.type = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO;
     attachInfo.countActionSets = 1;
     attachInfo.actionSets = &actionSet;
@@ -1643,7 +1643,7 @@ void IN_VRSyncActions( void )
         inputInitialized = qtrue;
     }
 
-    XrActiveActionSet activeActionSet;
+    XrActiveActionSet activeActionSet = {};
     activeActionSet.actionSet = actionSet;
     activeActionSet.subactionPath = XR_NULL_PATH;
     XrActionsSyncInfo syncInfo;

@@ -141,6 +141,8 @@ engine_t* VR_Init( ovrJava java )
     vr_engine.appState.MainThreadTid = gettid();
     vr_engine.appState.SystemId = systemId;
 
+    InitializeGraphicDeivce(vr_engine.appState.Instance);
+
     vr_engine.java = java;
     vr_initialized = qtrue;
     return &vr_engine;

@@ -310,4 +310,13 @@ static inline XrPosef XrPosef_Multiply(const XrPosef a, const XrPosef b) {
 	c.position = XrPosef_Transform(a, b.position);
 	return c;
 }
+
+int Pxr_SetEngineVersion(const char *version);
+
+int Pxr_StartCVControllerThread(int headSensorState, int handSensorState);
+
+int Pxr_StopCVControllerThread(int headSensorState, int handSensorState);
+
+void InitializeGraphicDeivce(XrInstance mInstance);
+
 #endif

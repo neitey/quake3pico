@@ -18,19 +18,6 @@ Copyright : Copyright (c) Facebook Technologies, LLC and its affiliates. All rig
 #include <sys/prctl.h>
 #include <assert.h>
 
-typedef enum
-{
-    PXR_HMD_3DOF = 0,
-    PXR_HMD_6DOF
-} PxrHmdDof;
-
-typedef enum
-{
-    PXR_CONTROLLER_3DOF = 0,
-    PXR_CONTROLLER_6DOF
-} PxrControllerDof;
-
-
 //cmc ext function ,not use from 2021/07
 typedef XrResult (XRAPI_PTR *PFN_xrSetEngineVersionPico)(XrInstance instance,const char* version);
 typedef XrResult (XRAPI_PTR *PFN_xrStartCVControllerThreadPico)(XrInstance instance,int headSensorState, int handSensorState);
@@ -455,8 +442,6 @@ void ovrApp_Destroy(ovrApp* app) {
 void ovrApp_HandleSessionStateChanges(ovrApp* app, XrSessionState state) {
     if (state == XR_SESSION_STATE_READY) {
         assert(app->SessionActive == false);
-        Pxr_SetEngineVersion("2.8.0.1");
-        Pxr_StartCVControllerThread(PXR_HMD_6DOF, PXR_CONTROLLER_6DOF);
 
         XrSessionBeginInfo sessionBeginInfo;
         memset(&sessionBeginInfo, 0, sizeof(sessionBeginInfo));
@@ -470,8 +455,6 @@ void ovrApp_HandleSessionStateChanges(ovrApp* app, XrSessionState state) {
         app->SessionActive = (result == XR_SUCCESS);
     } else if (state == XR_SESSION_STATE_STOPPING) {
         assert(app->SessionActive);
-        Pxr_SetEngineVersion("2.7.0.0");
-        Pxr_StopCVControllerThread(PXR_HMD_6DOF, PXR_CONTROLLER_6DOF);
 
         OXR(xrEndSession(app->Session));
         app->SessionActive = false;

@@ -23,6 +23,18 @@ const char* const requiredExtensionNames[] = {
 const uint32_t numRequiredExtensions =
         sizeof(requiredExtensionNames) / sizeof(requiredExtensionNames[0]);
 
+typedef enum
+{
+    PXR_HMD_3DOF = 0,
+    PXR_HMD_6DOF
+} PxrHmdDof;
+
+typedef enum
+{
+    PXR_CONTROLLER_3DOF = 0,
+    PXR_CONTROLLER_6DOF
+} PxrControllerDof;
+
 cvar_t *vr_worldscale = NULL;
 cvar_t *vr_worldscaleScaler = NULL;
 cvar_t *vr_hudDepth = NULL;
@@ -103,6 +115,10 @@ engine_t* VR_Init( ovrJava java )
         exit(1);
     }
 
+    InitializeGraphicDeivce(vr_engine.appState.Instance);
+    Pxr_SetEngineVersion("2.8.0.1");
+    Pxr_StartCVControllerThread(PXR_HMD_6DOF, PXR_CONTROLLER_6DOF);
+
     XrInstanceProperties instanceInfo;
     instanceInfo.type = XR_TYPE_INSTANCE_PROPERTIES;
     instanceInfo.next = NULL;
@@ -140,8 +156,6 @@ engine_t* VR_Init( ovrJava java )
 
     vr_engine.appState.MainThreadTid = gettid();
     vr_engine.appState.SystemId = systemId;
-
-    InitializeGraphicDeivce(vr_engine.appState.Instance);
 
     vr_engine.java = java;
     vr_initialized = qtrue;
@@ -287,6 +301,7 @@ void VR_InitCvars( void )
 void VR_Destroy( engine_t* engine )
 {
     if (engine == &vr_engine) {
+        Pxr_StopCVControllerThread(PXR_HMD_6DOF, PXR_CONTROLLER_6DOF);
         xrDestroyInstance(engine->appState.Instance);
         ovrEgl_DestroyContext(&engine->appState.Egl);
         ovrApp_Destroy(&engine->appState);

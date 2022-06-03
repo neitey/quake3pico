@@ -17,32 +17,94 @@
 #	include <SDL.h>
 #endif
 
-//OpenXR
-XrPath leftHandPath;
-XrPath rightHandPath;
-XrAction handPoseLeftAction;
-XrAction handPoseRightAction;
-XrAction indexLeftAction;
-XrAction indexRightAction;
-//XrAction menuAction;
-XrAction buttonAAction;
-XrAction buttonBAction;
-XrAction buttonXAction;
-XrAction buttonYAction;
-XrAction gripLeftAction;
-XrAction gripRightAction;
-XrAction moveOnLeftJoystickAction;
-XrAction moveOnRightJoystickAction;
-XrAction thumbstickLeftClickAction;
-XrAction thumbstickRightClickAction;
-//XrAction vibrateLeftFeedback;
-//XrAction vibrateRightFeedback;
-XrActionSet runningActionSet;
-XrSpace leftControllerAimSpace = XR_NULL_HANDLE;
-XrSpace rightControllerAimSpace = XR_NULL_HANDLE;
-qboolean actionsAttached = qfalse;
+XrResult CheckXrResult(XrResult res, const char* originator) {
+    if (XR_FAILED(res)) {
+        Com_Printf("error: %s", originator);
+    }
+    return res;
+}
+
+#define CHECK_XRCMD(cmd) CheckXrResult(cmd, #cmd);
+
+#define SIDE_LEFT 0
+#define SIDE_RIGHT 1
+#define SIDE_COUNT 2
+
+
+XrActionSet actionSet;
+XrAction grabAction;
+XrAction poseAction;
+XrAction vibrateAction;
+XrAction quitAction;
+/*************************pico******************/
+XrAction touchpadAction;
+XrAction AXAction;
+XrAction homeAction;
+XrAction BYAction;
+XrAction backAction;
+XrAction sideAction;
+XrAction triggerAction;
+XrAction joystickAction;
+XrAction batteryAction;
+//---add new----------
+XrAction AXTouchAction;
+XrAction BYTouchAction;
+XrAction RockerTouchAction;
+XrAction TriggerTouchAction;
+XrAction ThumbrestTouchAction;
+XrAction GripAction;
+//---add new----------zgt
+XrAction AAction;
+XrAction BAction;
+XrAction XAction;
+XrAction YAction;
+XrAction ATouchAction;
+XrAction BTouchAction;
+XrAction XTouchAction;
+XrAction YTouchAction;
+XrAction aimAction;
+/*************************pico******************/
+XrSpace aimSpace[SIDE_COUNT];
+XrPath handSubactionPath[SIDE_COUNT];
+XrSpace handSpace[SIDE_COUNT];
+
 qboolean inputInitialized = qfalse;
-qboolean useSimpleProfile = qfalse;
+
+void ResetInput()
+{
+    actionSet = XR_NULL_HANDLE;
+    grabAction = XR_NULL_HANDLE;
+    poseAction = XR_NULL_HANDLE;
+    vibrateAction = XR_NULL_HANDLE;
+    quitAction = XR_NULL_HANDLE;
+    /*************************pico******************/
+    touchpadAction = XR_NULL_HANDLE;
+    AXAction = XR_NULL_HANDLE;
+    homeAction = XR_NULL_HANDLE;
+    BYAction = XR_NULL_HANDLE;
+    backAction = XR_NULL_HANDLE;
+    sideAction = XR_NULL_HANDLE;
+    triggerAction = XR_NULL_HANDLE;
+    joystickAction = XR_NULL_HANDLE;
+    batteryAction = XR_NULL_HANDLE;
+    //---add new----------
+    AXTouchAction = XR_NULL_HANDLE;
+    BYTouchAction = XR_NULL_HANDLE;
+    RockerTouchAction = XR_NULL_HANDLE;
+    TriggerTouchAction = XR_NULL_HANDLE;
+    ThumbrestTouchAction = XR_NULL_HANDLE;
+    GripAction = XR_NULL_HANDLE;
+    //---add new----------zgt
+    AAction = XR_NULL_HANDLE;
+    BAction = XR_NULL_HANDLE;
+    XAction = XR_NULL_HANDLE;
+    YAction = XR_NULL_HANDLE;
+    ATouchAction = XR_NULL_HANDLE;
+    BTouchAction = XR_NULL_HANDLE;
+    XTouchAction = XR_NULL_HANDLE;
+    YTouchAction = XR_NULL_HANDLE;
+    aimAction = XR_NULL_HANDLE;
+}
 
 enum {
 	VR_TOUCH_AXIS_UP = 1 << 0,
@@ -250,7 +312,7 @@ void VR_Vibrate( int duration, int chan, float intensity )
 
 
 static void VR_processHaptics() {
-    /*static float lastFrameTime = 0.0f;
+    static float lastFrameTime = 0.0f;
     float timestamp = (float)(Sys_Milliseconds( ));
     float frametime = timestamp - lastFrameTime;
     lastFrameTime = timestamp;
@@ -266,10 +328,11 @@ static void VR_processHaptics() {
             vibration.amplitude = vibration_channel_intensity[i];
             vibration.duration = ToXrTime(vibration_channel_duration[i]);
             vibration.frequency = 3000;
-            XrHapticActionInfo hapticActionInfo = {};
+            XrHapticActionInfo hapticActionInfo;
             hapticActionInfo.type = XR_TYPE_HAPTIC_ACTION_INFO;
             hapticActionInfo.next = NULL;
-            hapticActionInfo.action = i == 0 ? vibrateLeftFeedback : vibrateRightFeedback;
+            hapticActionInfo.action = vibrateAction;
+            hapticActionInfo.subactionPath = handSubactionPath[i];
             OXR(xrApplyHapticFeedback(VR_GetEngine()->appState.Session, &hapticActionInfo, (const XrHapticBaseHeader*)&vibration));
 
             if (vibration_channel_duration[i] != -1.0f) {
@@ -282,13 +345,14 @@ static void VR_processHaptics() {
             }
         } else {
             // Stop haptics
-            XrHapticActionInfo hapticActionInfo = {};
+            XrHapticActionInfo hapticActionInfo;
             hapticActionInfo.type = XR_TYPE_HAPTIC_ACTION_INFO;
             hapticActionInfo.next = NULL;
-            hapticActionInfo.action = i == 0 ? vibrateLeftFeedback : vibrateRightFeedback;
+            hapticActionInfo.action = vibrateAction;
+            hapticActionInfo.subactionPath = handSubactionPath[i];
             OXR(xrStopHapticFeedback(VR_GetEngine()->appState.Session, &hapticActionInfo));
         }
-    }*/
+    }
 }
 
 static qboolean IN_GetInputAction(const char* inputName, char* action)
@@ -507,318 +571,538 @@ void VR_HapticEvent(const char* event, int position, int flags, int intensity, f
     }
 }
 
-XrSpace CreateActionSpace(XrAction poseAction, XrPath subactionPath) {
-    XrActionSpaceCreateInfo asci = {};
-    asci.type = XR_TYPE_ACTION_SPACE_CREATE_INFO;
-    asci.action = poseAction;
-    asci.poseInActionSpace.orientation.w = 1.0f;
-    asci.subactionPath = subactionPath;
-    XrSpace actionSpace = XR_NULL_HANDLE;
-    OXR(xrCreateActionSpace(VR_GetEngine()->appState.Session, &asci, &actionSpace));
-    return actionSpace;
-}
-
-XrActionSuggestedBinding ActionSuggestedBinding(XrAction action, const char* bindingString) {
+XrActionSuggestedBinding ActionSuggestedBinding(XrAction action, XrPath path) {
     XrActionSuggestedBinding asb;
     asb.action = action;
-    XrPath bindingPath;
-    OXR(xrStringToPath(VR_GetEngine()->appState.Instance, bindingString, &bindingPath));
-    asb.binding = bindingPath;
+    asb.binding = path;
     return asb;
 }
 
-XrActionSet CreateActionSet(int priority, const char* name, const char* localizedName) {
-    XrActionSetCreateInfo asci = {};
-    asci.type = XR_TYPE_ACTION_SET_CREATE_INFO;
-    asci.next = NULL;
-    asci.priority = priority;
-    strcpy(asci.actionSetName, name);
-    strcpy(asci.localizedActionSetName, localizedName);
-    XrActionSet actionSet = XR_NULL_HANDLE;
-    OXR(xrCreateActionSet(VR_GetEngine()->appState.Instance, &asci, &actionSet));
-    return actionSet;
-}
-
-XrAction CreateAction(
-        XrActionSet actionSet,
-        XrActionType type,
-        const char* actionName,
-        const char* localizedName,
-        int countSubactionPaths,
-        XrPath* subactionPaths) {
-    ALOGV("CreateAction %s, %" PRIi32, actionName, countSubactionPaths);
-
-    XrActionCreateInfo aci = {};
-    aci.type = XR_TYPE_ACTION_CREATE_INFO;
-    aci.next = NULL;
-    aci.actionType = type;
-    if (countSubactionPaths > 0) {
-        aci.countSubactionPaths = countSubactionPaths;
-        aci.subactionPaths = subactionPaths;
-    }
-    strcpy(aci.actionName, actionName);
-    strcpy(aci.localizedActionName, localizedName ? localizedName : actionName);
-    XrAction action = XR_NULL_HANDLE;
-    OXR(xrCreateAction(actionSet, &aci, &action));
-    return action;
-}
-
-qboolean ActionPoseIsActive(XrAction action, XrPath subactionPath) {
+XrActionStateBoolean GetActionStateBoolean(XrAction action, int hand) {
     XrActionStateGetInfo getInfo = {};
     getInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
     getInfo.action = action;
-    getInfo.subactionPath = subactionPath;
-
-    XrActionStatePose state = {};
-    state.type = XR_TYPE_ACTION_STATE_POSE;
-    OXR(xrGetActionStatePose(VR_GetEngine()->appState.Session, &getInfo, &state));
-    return state.isActive != XR_FALSE;
-}
-
-XrActionStateFloat GetActionStateFloat(XrAction action) {
-    XrActionStateGetInfo getInfo = {};
-    getInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
-    getInfo.action = action;
-
-    XrActionStateFloat state = {};
-    state.type = XR_TYPE_ACTION_STATE_FLOAT;
-
-    OXR(xrGetActionStateFloat(VR_GetEngine()->appState.Session, &getInfo, &state));
-    return state;
-}
-
-XrActionStateBoolean GetActionStateBoolean(XrAction action) {
-    XrActionStateGetInfo getInfo = {};
-    getInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
-    getInfo.action = action;
+    if (hand >= 0)
+        getInfo.subactionPath = handSubactionPath[hand];
 
     XrActionStateBoolean state = {};
     state.type = XR_TYPE_ACTION_STATE_BOOLEAN;
-
     OXR(xrGetActionStateBoolean(VR_GetEngine()->appState.Session, &getInfo, &state));
     return state;
 }
 
-XrActionStateVector2f GetActionStateVector2(XrAction action) {
+XrActionStateFloat GetActionStateFloat(XrAction action, int hand) {
     XrActionStateGetInfo getInfo = {};
     getInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
     getInfo.action = action;
+    if (hand >= 0)
+        getInfo.subactionPath = handSubactionPath[hand];
+
+    XrActionStateFloat state = {};
+    state.type = XR_TYPE_ACTION_STATE_FLOAT;
+    OXR(xrGetActionStateFloat(VR_GetEngine()->appState.Session, &getInfo, &state));
+    return state;
+}
+
+XrActionStateVector2f GetActionStateVector2(XrAction action, int hand) {
+    XrActionStateGetInfo getInfo = {};
+    getInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
+    getInfo.action = action;
+    if (hand >= 0)
+        getInfo.subactionPath = handSubactionPath[hand];
 
     XrActionStateVector2f state = {};
     state.type = XR_TYPE_ACTION_STATE_VECTOR2F;
-
     OXR(xrGetActionStateVector2f(VR_GetEngine()->appState.Session, &getInfo, &state));
     return state;
 }
 
+void InitializeActions() {
+    engine_t* engine = VR_GetEngine();
+
+    // Create an action set.
+    {
+        XrActionSetCreateInfo actionSetInfo;
+        actionSetInfo.type = XR_TYPE_ACTION_SET_CREATE_INFO;
+        strcpy(actionSetInfo.actionSetName, "gameplay");
+        strcpy(actionSetInfo.localizedActionSetName, "Gameplay");
+        actionSetInfo.priority = 0;
+        CHECK_XRCMD(xrCreateActionSet(engine->appState.Instance, &actionSetInfo, &actionSet));
+    }
+
+    // Get the XrPath for the left and right hands - we will use them as subaction paths.
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left", &handSubactionPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right", &handSubactionPath[SIDE_RIGHT]));
+
+    // Create actions.
+    {
+        // Create an input action for grabbing objects with the left and right hands.
+        XrActionCreateInfo actionInfo;
+        actionInfo.type = XR_TYPE_ACTION_CREATE_INFO;
+        actionInfo.actionType = XR_ACTION_TYPE_FLOAT_INPUT;
+        strcpy(actionInfo.actionName, "grab_object");
+        strcpy(actionInfo.localizedActionName, "Grab Object");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &grabAction));
+
+        // Create an input action getting the left and right hand poses.
+        actionInfo.actionType = XR_ACTION_TYPE_POSE_INPUT;
+        strcpy(actionInfo.actionName, "hand_pose");
+        strcpy(actionInfo.localizedActionName, "Hand Pose");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &poseAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_POSE_INPUT;
+        strcpy(actionInfo.actionName, "aim_pose");
+        strcpy(actionInfo.localizedActionName, "Aim Pose");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &aimAction));
+
+        // Create output actions for vibrating the left and right controller.
+        actionInfo.actionType = XR_ACTION_TYPE_VIBRATION_OUTPUT;
+        strcpy(actionInfo.actionName, "vibrate_hand");
+        strcpy(actionInfo.localizedActionName, "Vibrate Hand");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &vibrateAction));
+
+        // Create input actions for quitting the session using the left and right controller.
+        // Since it doesn't matter which hand did this, we do not specify subaction paths for it.
+        // We will just suggest bindings for both hands, where possible.
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "quit_session");
+        strcpy(actionInfo.localizedActionName, "Quit Session");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &quitAction));
+        /**********************************pico***************************************/
+        // Create input actions for toucpad key using the left and right controller.
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "touchpad");
+        strcpy(actionInfo.localizedActionName, "Touchpad");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &touchpadAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "axkey");
+        strcpy(actionInfo.localizedActionName, "AXkey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &AXAction));
+
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "homekey");
+        strcpy(actionInfo.localizedActionName, "Homekey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &homeAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "bykey");
+        strcpy(actionInfo.localizedActionName, "BYkey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &BYAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "backkey");
+        strcpy(actionInfo.localizedActionName, "Backkey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &backAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "sidekey");
+        strcpy(actionInfo.localizedActionName, "Sidekey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &sideAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_FLOAT_INPUT;
+        strcpy(actionInfo.actionName, "trigger");
+        strcpy(actionInfo.localizedActionName, "Trigger");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &triggerAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_VECTOR2F_INPUT;
+        strcpy(actionInfo.actionName, "joystick");
+        strcpy(actionInfo.localizedActionName, "Joystick");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &joystickAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_FLOAT_INPUT;
+        strcpy(actionInfo.actionName, "battery");
+        strcpy(actionInfo.localizedActionName, "battery");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &batteryAction));
+        //------------------------add new---------------------------------
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "axtouch");
+        strcpy(actionInfo.localizedActionName, "AXtouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &AXTouchAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "bytouch");
+        strcpy(actionInfo.localizedActionName, "BYtouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &BYTouchAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "rockertouch");
+        strcpy(actionInfo.localizedActionName, "Rockertouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &RockerTouchAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "triggertouch");
+        strcpy(actionInfo.localizedActionName, "Triggertouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &TriggerTouchAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "thumbresttouch");
+        strcpy(actionInfo.localizedActionName, "Thumbresttouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &ThumbrestTouchAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_FLOAT_INPUT;
+        strcpy(actionInfo.actionName, "gripvalue");
+        strcpy(actionInfo.localizedActionName, "GripValue");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &GripAction));
+
+        //--------------add new----------zgt
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "akey");
+        strcpy(actionInfo.localizedActionName, "Akey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &AAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "bkey");
+        strcpy(actionInfo.localizedActionName, "Bkey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &BAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "xkey");
+        strcpy(actionInfo.localizedActionName, "Xkey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &XAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "ykey");
+        strcpy(actionInfo.localizedActionName, "Ykey");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &YAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "atouch");
+        strcpy(actionInfo.localizedActionName, "Atouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &ATouchAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "btouch");
+        strcpy(actionInfo.localizedActionName, "Btouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &BTouchAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "xtouch");
+        strcpy(actionInfo.localizedActionName, "Xtouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &XTouchAction));
+
+        actionInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+        strcpy(actionInfo.actionName, "ytouch");
+        strcpy(actionInfo.localizedActionName, "Ytouch");
+        actionInfo.countSubactionPaths = SIDE_COUNT;
+        actionInfo.subactionPaths = handSubactionPath;
+        CHECK_XRCMD(xrCreateAction(actionSet, &actionInfo, &YTouchAction));
+        /**********************************pico***************************************/
+
+
+    }
+
+    XrPath selectPath[SIDE_COUNT];
+    XrPath squeezeValuePath[SIDE_COUNT];
+    XrPath squeezeClickPath[SIDE_COUNT];
+    XrPath posePath[SIDE_COUNT];
+    XrPath hapticPath[SIDE_COUNT];
+    XrPath menuClickPath[SIDE_COUNT];
+    XrPath systemPath[SIDE_COUNT];
+    XrPath thumbrestPath[SIDE_COUNT];
+    XrPath triggerTouchPath[SIDE_COUNT];
+    XrPath triggerValuePath[SIDE_COUNT];
+    XrPath thumbstickClickPath[SIDE_COUNT];
+    XrPath thumbstickTouchPath[SIDE_COUNT];
+    XrPath thumbstickPosPath[SIDE_COUNT];
+    XrPath aimPath[SIDE_COUNT];
+
+    /**************************pico************************************/
+    XrPath touchpadPath[SIDE_COUNT];
+    XrPath AXValuePath[SIDE_COUNT];
+    XrPath homeClickPath[SIDE_COUNT];
+    XrPath BYValuePath[SIDE_COUNT];
+    XrPath backPath[SIDE_COUNT];
+    XrPath sideClickPath[SIDE_COUNT];
+    XrPath triggerPath[SIDE_COUNT];
+    XrPath joystickPath[SIDE_COUNT];
+    XrPath batteryPath[SIDE_COUNT];
+    //--------------add new----------
+    XrPath GripPath[SIDE_COUNT];
+    XrPath AXTouchPath[SIDE_COUNT];
+    XrPath BYTouchPath[SIDE_COUNT];
+    XrPath RockerTouchPath[SIDE_COUNT];
+    XrPath TriggerTouchPath[SIDE_COUNT];
+    XrPath ThumbresetTouchPath[SIDE_COUNT];
+    //--------------add new----------zgt
+    XrPath AValuePath[SIDE_COUNT];
+    XrPath BValuePath[SIDE_COUNT];
+    XrPath XValuePath[SIDE_COUNT];
+    XrPath YValuePath[SIDE_COUNT];
+    XrPath ATouchPath[SIDE_COUNT];
+    XrPath BTouchPath[SIDE_COUNT];
+    XrPath XTouchPath[SIDE_COUNT];
+    XrPath YTouchPath[SIDE_COUNT];
+    /**************************pico************************************/
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/select/click", &selectPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/select/click", &selectPath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/menu/click", &menuClickPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/menu/click", &menuClickPath[SIDE_RIGHT]));
+
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/squeeze/value", &squeezeValuePath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/squeeze/value", &squeezeValuePath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/squeeze/click", &squeezeClickPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/squeeze/click", &squeezeClickPath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/grip/pose", &posePath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/grip/pose", &posePath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/aim/pose", &aimPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/aim/pose", &aimPath[SIDE_RIGHT]));
+
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/output/haptic", &hapticPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/output/haptic", &hapticPath[SIDE_RIGHT]));
+
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/trigger/touch", &triggerTouchPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/trigger/touch", &triggerTouchPath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/trigger/value", &triggerValuePath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/trigger/value", &triggerValuePath[SIDE_RIGHT]));
+
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/thumbstick/click", &thumbstickClickPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/thumbstick/click", &thumbstickClickPath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/thumbstick/touch", &thumbstickTouchPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/thumbstick/touch", &thumbstickTouchPath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/thumbstick", &thumbstickPosPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/thumbstick", &thumbstickPosPath[SIDE_RIGHT]));
+
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/system/click", &systemPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/system/click", &systemPath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/thumbrest/touch", &thumbrestPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/thumbrest/touch", &thumbrestPath[SIDE_RIGHT]));
+
+    /**************************pico************************************/
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/back/click", &backPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/back/click", &backPath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/battery/value", &batteryPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/battery/value", &batteryPath[SIDE_RIGHT]));
+
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/x/click", &XValuePath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/y/click", &YValuePath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/a/click", &AValuePath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/b/click", &BValuePath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/x/touch", &XTouchPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/left/input/y/touch", &YTouchPath[SIDE_LEFT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/a/touch", &ATouchPath[SIDE_RIGHT]));
+    CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/user/hand/right/input/b/touch", &BTouchPath[SIDE_RIGHT]));
+    /**************************pico************************************/
+    XrActionSuggestedBinding bindings[128];
+    int currBinding = 0;
+
+    // Suggest bindings for KHR Simple.
+    /* {
+        XrPath khrSimpleInteractionProfilePath;
+         CHECK_XRCMD(
+             xrStringToPath(up.mInstance, "/interaction_profiles/khr/simple_controller", &khrSimpleInteractionProfilePath));
+         bindings[currBinding++] = ActionSuggestedBinding(grabAction, selectPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(grabAction, selectPath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
+         XrInteractionProfileSuggestedBinding suggestedBindings;
+         suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
+         suggestedBindings.interactionProfile = khrSimpleInteractionProfilePath;
+         suggestedBindings.suggestedBindings = bindings;
+         suggestedBindings.countSuggestedBindings = currBinding;
+         CHECK_XRCMD(xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings));
+     }*/
+     // Suggest bindings for the Oculus Touch.
+     /*{
+         XrPath oculusTouchInteractionProfilePath;
+         CHECK_XRCMD(
+             xrStringToPath(engine->appState.Instance, "/interaction_profiles/oculus/touch_controller", &oculusTouchInteractionProfilePath));
+         bindings[currBinding++] = ActionSuggestedBinding(grabAction, triggerValuePath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(grabAction, triggerValuePath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(aimAction, aimPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(aimAction, aimPath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
+         XrInteractionProfileSuggestedBinding suggestedBindings;
+         suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
+         suggestedBindings.interactionProfile = oculusTouchInteractionProfilePath;
+         suggestedBindings.suggestedBindings = bindings;
+         suggestedBindings.countSuggestedBindings = currBinding;
+         CHECK_XRCMD(xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings));
+     }*/
+     // Suggest bindings for the Vive Controller.
+     /*{
+         XrPath viveControllerInteractionProfilePath;
+         CHECK_XRCMD(
+             xrStringToPath(engine->appState.Instance, "/interaction_profiles/htc/vive_controller", &viveControllerInteractionProfilePath));
+         bindings[currBinding++] = ActionSuggestedBinding(grabAction, squeezeClickPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(grabAction, squeezeClickPath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
+         XrInteractionProfileSuggestedBinding suggestedBindings;
+         suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
+         suggestedBindings.interactionProfile = viveControllerInteractionProfilePath;
+         suggestedBindings.suggestedBindings = bindings;
+         suggestedBindings.countSuggestedBindings = currBinding;
+         CHECK_XRCMD(xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings));
+     }*/
+
+     // Suggest bindings for the Microsoft Mixed Reality Motion Controller.
+     /*{
+         XrPath microsoftMixedRealityInteractionProfilePath;
+         CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/interaction_profiles/microsoft/motion_controller",
+                                    &microsoftMixedRealityInteractionProfilePath));
+         bindings[currBinding++] = ActionSuggestedBinding(grabAction, squeezeClickPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(grabAction, squeezeClickPath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(quitAction, menuClickPath[SIDE_RIGHT]);
+         bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
+         bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
+         XrInteractionProfileSuggestedBinding suggestedBindings;
+         suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
+         suggestedBindings.interactionProfile = microsoftMixedRealityInteractionProfilePath;
+         suggestedBindings.suggestedBindings = bindings.data();
+         suggestedBindings.countSuggestedBindings = (uint32_t)bindings.size();
+         CHECK_XRCMD(xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings));
+     }*/
+    // Suggest bindings for the Pico Neo 3 controller
+    {
+        XrPath picoMixedRealityInteractionProfilePath;
+        CHECK_XRCMD(xrStringToPath(engine->appState.Instance, "/interaction_profiles/pico/neo3_controller",
+                                   &picoMixedRealityInteractionProfilePath));
+
+        bindings[currBinding++] = ActionSuggestedBinding(touchpadAction, thumbstickClickPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(touchpadAction, thumbstickClickPath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(joystickAction, thumbstickPosPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(joystickAction, thumbstickPosPath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(RockerTouchAction, thumbstickTouchPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(RockerTouchAction, thumbstickTouchPath[SIDE_RIGHT]);
+
+        bindings[currBinding++] = ActionSuggestedBinding(triggerAction, triggerValuePath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(triggerAction, triggerValuePath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(TriggerTouchAction, triggerTouchPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(TriggerTouchAction, triggerTouchPath[SIDE_RIGHT]);
+
+        bindings[currBinding++] = ActionSuggestedBinding(sideAction, squeezeClickPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(sideAction, squeezeClickPath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(GripAction, squeezeValuePath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(GripAction, squeezeValuePath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(poseAction, posePath[SIDE_RIGHT]);
+
+        bindings[currBinding++] = ActionSuggestedBinding(homeAction, systemPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(homeAction, systemPath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(backAction, backPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(backAction, backPath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(batteryAction, batteryPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(batteryAction, batteryPath[SIDE_RIGHT]);
+
+        bindings[currBinding++] = ActionSuggestedBinding(ThumbrestTouchAction, thumbrestPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(ThumbrestTouchAction, thumbrestPath[SIDE_RIGHT]);
+
+        bindings[currBinding++] = ActionSuggestedBinding(XTouchAction, XTouchPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(YTouchAction, YTouchPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(ATouchAction, ATouchPath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(BTouchAction, BTouchPath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(XAction, XValuePath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(YAction, YValuePath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(AAction, AValuePath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(BAction, BValuePath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(aimAction, aimPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(aimAction, aimPath[SIDE_RIGHT]);
+
+        XrInteractionProfileSuggestedBinding suggestedBindings;
+        suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
+        suggestedBindings.interactionProfile = picoMixedRealityInteractionProfilePath;
+        suggestedBindings.suggestedBindings = bindings;
+        suggestedBindings.countSuggestedBindings = currBinding;
+        CHECK_XRCMD(xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings));
+    }
+
+    XrActionSpaceCreateInfo actionSpaceInfo;
+    actionSpaceInfo.type = XR_TYPE_ACTION_SPACE_CREATE_INFO;
+    actionSpaceInfo.action = poseAction;
+    actionSpaceInfo.poseInActionSpace.orientation.w = 1.f;
+    actionSpaceInfo.subactionPath = handSubactionPath[SIDE_LEFT];
+    CHECK_XRCMD(xrCreateActionSpace(engine->appState.Session, &actionSpaceInfo, &handSpace[SIDE_LEFT]));
+    actionSpaceInfo.subactionPath = handSubactionPath[SIDE_RIGHT];
+    CHECK_XRCMD(xrCreateActionSpace(engine->appState.Session, &actionSpaceInfo, &handSpace[SIDE_RIGHT]));
+    actionSpaceInfo.action = aimAction;
+    actionSpaceInfo.poseInActionSpace.orientation.w = 1.f;
+    actionSpaceInfo.subactionPath = handSubactionPath[SIDE_LEFT];
+    CHECK_XRCMD(xrCreateActionSpace(engine->appState.Session, &actionSpaceInfo, &aimSpace[SIDE_LEFT]));
+    actionSpaceInfo.subactionPath = handSubactionPath[SIDE_RIGHT];
+    CHECK_XRCMD(xrCreateActionSpace(engine->appState.Session, &actionSpaceInfo, &aimSpace[SIDE_RIGHT]));
+
+    XrSessionActionSetsAttachInfo attachInfo;
+    attachInfo.type = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO;
+    attachInfo.countActionSets = 1;
+    attachInfo.actionSets = &actionSet;
+    CHECK_XRCMD(xrAttachSessionActionSets(engine->appState.Session, &attachInfo));
+}
+
 void IN_VRInit( void )
 {
-    if (inputInitialized)
-        return;
-
-	memset(&vr, 0, sizeof(vr));
-
-	engine_t *engine = VR_GetEngine();
-    callbackClass = (*engine->java.Env)->GetObjectClass(engine->java.Env, engine->java.ActivityObject);
-    android_haptic_event = (*engine->java.Env)->GetMethodID(engine->java.Env, callbackClass, "haptic_event","(Ljava/lang/String;IIIFF)V");
-
-    // Actions
-    runningActionSet = CreateActionSet(1, "running_action_set", "Action Set used on main loop");
-    indexLeftAction = CreateAction(runningActionSet, XR_ACTION_TYPE_FLOAT_INPUT, "index_left", "Index left", 0, NULL);
-    indexRightAction = CreateAction(runningActionSet, XR_ACTION_TYPE_FLOAT_INPUT, "index_right", "Index right", 0, NULL);
-    //menuAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "menu_action", "Menu", 0, NULL);
-    buttonAAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_a", "Button A", 0, NULL);
-    buttonBAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_b", "Button B", 0, NULL);
-    buttonXAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_x", "Button X", 0, NULL);
-    buttonYAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "button_y", "Button Y", 0, NULL);
-    gripLeftAction = CreateAction(runningActionSet, XR_ACTION_TYPE_FLOAT_INPUT, "grip_left", "Grip left", 0, NULL);
-    gripRightAction = CreateAction(runningActionSet, XR_ACTION_TYPE_FLOAT_INPUT, "grip_right", "Grip right", 0, NULL);
-    moveOnLeftJoystickAction = CreateAction(runningActionSet, XR_ACTION_TYPE_VECTOR2F_INPUT, "move_on_left_joy", "Move on left Joy", 0, NULL);
-    moveOnRightJoystickAction = CreateAction(runningActionSet, XR_ACTION_TYPE_VECTOR2F_INPUT, "move_on_right_joy", "Move on right Joy", 0, NULL);
-    thumbstickLeftClickAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "thumbstick_left", "Thumbstick left", 0, NULL);
-    thumbstickRightClickAction = CreateAction(runningActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "thumbstick_right", "Thumbstick right", 0, NULL);
-    //vibrateLeftFeedback = CreateAction(runningActionSet, XR_ACTION_TYPE_VIBRATION_OUTPUT, "vibrate_left_feedback", "Vibrate Left Controller Feedback", 0, NULL);
-    //vibrateRightFeedback = CreateAction(runningActionSet, XR_ACTION_TYPE_VIBRATION_OUTPUT, "vibrate_right_feedback", "Vibrate Right Controller Feedback", 0, NULL);
-
-    OXR(xrStringToPath(engine->appState.Instance, "/user/hand/left", &leftHandPath));
-    OXR(xrStringToPath(engine->appState.Instance, "/user/hand/right", &rightHandPath));
-    handPoseLeftAction = CreateAction(runningActionSet, XR_ACTION_TYPE_POSE_INPUT, "hand_pose_left", NULL, 1, &leftHandPath);
-    handPoseRightAction = CreateAction(runningActionSet, XR_ACTION_TYPE_POSE_INPUT, "hand_pose_right", NULL, 1, &rightHandPath);
-
-    XrPath interactionProfilePath = XR_NULL_PATH;
-    XrPath interactionProfilePathTouch = XR_NULL_PATH;
-    XrPath interactionProfilePathKHRSimple = XR_NULL_PATH;
-
-    OXR(xrStringToPath(engine->appState.Instance, "/interaction_profiles/oculus/touch_controller", &interactionProfilePathTouch));
-    OXR(xrStringToPath(engine->appState.Instance, "/interaction_profiles/khr/simple_controller", &interactionProfilePathKHRSimple));
-
-    // Toggle this to force simple as a first choice, otherwise use it as a last resort
-    if (useSimpleProfile) {
-        ALOGV("xrSuggestInteractionProfileBindings found bindings for Khronos SIMPLE controller");
-        interactionProfilePath = interactionProfilePathKHRSimple;
-    } else {
-        // Query Set
-        XrActionSet queryActionSet = CreateActionSet(1, "query_action_set", "Action Set used to query device caps");
-        XrAction dummyAction = CreateAction(queryActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, "dummy_action", "Dummy Action", 0, NULL);
-
-        // Map bindings
-        XrActionSuggestedBinding bindings[1];
-        int currBinding = 0;
-        bindings[currBinding++] = ActionSuggestedBinding(dummyAction, "/user/hand/right/input/system/click");
-
-        XrInteractionProfileSuggestedBinding suggestedBindings = {};
-        suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
-        suggestedBindings.next = NULL;
-        suggestedBindings.suggestedBindings = bindings;
-        suggestedBindings.countSuggestedBindings = currBinding;
-
-        // Try all
-        suggestedBindings.interactionProfile = interactionProfilePathTouch;
-        XrResult suggestTouchResult = xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings);
-        OXR(suggestTouchResult);
-
-        if (XR_SUCCESS == suggestTouchResult) {
-            ALOGV("xrSuggestInteractionProfileBindings found bindings for QUEST controller");
-            interactionProfilePath = interactionProfilePathTouch;
-        }
-
-        if (interactionProfilePath == XR_NULL_PATH) {
-            // Simple as a fallback
-            bindings[0] = ActionSuggestedBinding(dummyAction, "/user/hand/right/input/select/click");
-            suggestedBindings.interactionProfile = interactionProfilePathKHRSimple;
-            XrResult suggestKHRSimpleResult = xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings);
-            OXR(suggestKHRSimpleResult);
-            if (XR_SUCCESS == suggestKHRSimpleResult) {
-                ALOGV("xrSuggestInteractionProfileBindings found bindings for Khronos SIMPLE controller");
-                interactionProfilePath = interactionProfilePathKHRSimple;
-            } else {
-                ALOGE("xrSuggestInteractionProfileBindings did NOT find any bindings.");
-                assert(qfalse);
-            }
-        }
-    }
-
-    // Action creation
-    {
-        // Map bindings
-        XrActionSuggestedBinding bindings[32]; // large enough for all profiles
-        int currBinding = 0;
-
-        {
-            if (interactionProfilePath == interactionProfilePathTouch) {
-                bindings[currBinding++] = ActionSuggestedBinding(indexLeftAction, "/user/hand/left/input/trigger/value");
-                bindings[currBinding++] = ActionSuggestedBinding(indexRightAction, "/user/hand/right/input/trigger/value");
-                //bindings[currBinding++] = ActionSuggestedBinding(menuAction, "/user/hand/left/input/menu/click");
-                bindings[currBinding++] = ActionSuggestedBinding(buttonXAction, "/user/hand/left/input/x/click");
-                bindings[currBinding++] = ActionSuggestedBinding(buttonYAction, "/user/hand/left/input/y/click");
-                bindings[currBinding++] = ActionSuggestedBinding(buttonAAction, "/user/hand/right/input/a/click");
-                bindings[currBinding++] = ActionSuggestedBinding(buttonBAction, "/user/hand/right/input/b/click");
-                bindings[currBinding++] = ActionSuggestedBinding(gripLeftAction, "/user/hand/left/input/squeeze/value");
-                bindings[currBinding++] = ActionSuggestedBinding(gripRightAction, "/user/hand/right/input/squeeze/value");
-                bindings[currBinding++] = ActionSuggestedBinding(moveOnLeftJoystickAction, "/user/hand/left/input/thumbstick");
-                bindings[currBinding++] = ActionSuggestedBinding(moveOnRightJoystickAction, "/user/hand/right/input/thumbstick");
-                bindings[currBinding++] = ActionSuggestedBinding(thumbstickLeftClickAction, "/user/hand/left/input/thumbstick/click");
-                bindings[currBinding++] = ActionSuggestedBinding(thumbstickRightClickAction, "/user/hand/right/input/thumbstick/click");
-                //bindings[currBinding++] = ActionSuggestedBinding(vibrateLeftFeedback, "/user/hand/left/output/haptic");
-                //bindings[currBinding++] = ActionSuggestedBinding(vibrateRightFeedback, "/user/hand/right/output/haptic");
-                bindings[currBinding++] = ActionSuggestedBinding(handPoseLeftAction, "/user/hand/left/input/aim/pose");
-                bindings[currBinding++] = ActionSuggestedBinding(handPoseRightAction, "/user/hand/right/input/aim/pose");
-            }
-
-            if (interactionProfilePath == interactionProfilePathKHRSimple) {
-                bindings[currBinding++] = ActionSuggestedBinding(indexLeftAction, "/user/hand/left/input/select/click");
-                bindings[currBinding++] = ActionSuggestedBinding(indexRightAction, "/user/hand/right/input/select/click");
-                bindings[currBinding++] = ActionSuggestedBinding(buttonAAction, "/user/hand/left/input/menu/click");
-                bindings[currBinding++] = ActionSuggestedBinding(buttonXAction, "/user/hand/right/input/menu/click");
-                //bindings[currBinding++] = ActionSuggestedBinding(vibrateLeftFeedback, "/user/hand/left/output/haptic");
-                //bindings[currBinding++] = ActionSuggestedBinding(vibrateRightFeedback, "/user/hand/right/output/haptic");
-                bindings[currBinding++] = ActionSuggestedBinding(handPoseLeftAction, "/user/hand/left/input/aim/pose");
-                bindings[currBinding++] = ActionSuggestedBinding(handPoseRightAction, "/user/hand/right/input/aim/pose");
-            }
-        }
-
-        XrInteractionProfileSuggestedBinding suggestedBindings = {};
-        suggestedBindings.type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
-        suggestedBindings.next = NULL;
-        suggestedBindings.interactionProfile = interactionProfilePath;
-        suggestedBindings.suggestedBindings = bindings;
-        suggestedBindings.countSuggestedBindings = currBinding;
-        OXR(xrSuggestInteractionProfileBindings(engine->appState.Instance, &suggestedBindings));
-
-        // Enumerate actions
-        XrPath actionPathsBuffer[32];
-        char stringBuffer[256];
-        XrAction actionsToEnumerate[] = {
-                indexLeftAction,
-                indexRightAction,
-                //menuAction,
-                buttonAAction,
-                buttonBAction,
-                buttonXAction,
-                buttonYAction,
-                gripLeftAction,
-                gripRightAction,
-                moveOnLeftJoystickAction,
-                moveOnRightJoystickAction,
-                thumbstickLeftClickAction,
-                thumbstickRightClickAction,
-                //vibrateLeftFeedback,
-                //vibrateRightFeedback,
-                handPoseLeftAction,
-                handPoseRightAction
-        };
-        for (size_t i = 0; i < sizeof(actionsToEnumerate) / sizeof(actionsToEnumerate[0]); ++i) {
-            XrBoundSourcesForActionEnumerateInfo enumerateInfo = {};
-            enumerateInfo.type = XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO;
-            enumerateInfo.next = NULL;
-            enumerateInfo.action = actionsToEnumerate[i];
-
-            // Get Count
-            uint32_t countOutput = 0;
-            OXR(xrEnumerateBoundSourcesForAction(
-                    engine->appState.Session, &enumerateInfo, 0 /* request size */, &countOutput, NULL));
-            ALOGV(
-                    "xrEnumerateBoundSourcesForAction action=%lld count=%u",
-                    (long long)enumerateInfo.action,
-                    countOutput);
-
-            if (countOutput < 32) {
-                OXR(xrEnumerateBoundSourcesForAction(
-                        engine->appState.Session, &enumerateInfo, 32, &countOutput, actionPathsBuffer));
-                for (uint32_t a = 0; a < countOutput; ++a) {
-                    XrInputSourceLocalizedNameGetInfo nameGetInfo = {};
-                    nameGetInfo.type = XR_TYPE_INPUT_SOURCE_LOCALIZED_NAME_GET_INFO;
-                    nameGetInfo.next = NULL;
-                    nameGetInfo.sourcePath = actionPathsBuffer[a];
-                    nameGetInfo.whichComponents = XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT |
-                                                  XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT |
-                                                  XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT;
-
-                    uint32_t stringCount = 0u;
-                    OXR(xrGetInputSourceLocalizedName(
-                            engine->appState.Session, &nameGetInfo, 0, &stringCount, NULL));
-                    if (stringCount < 256) {
-                        OXR(xrGetInputSourceLocalizedName(
-                                engine->appState.Session, &nameGetInfo, 256, &stringCount, stringBuffer));
-                        char pathStr[256];
-                        uint32_t strLen = 0;
-                        OXR(xrPathToString(
-                                engine->appState.Instance,
-                                actionPathsBuffer[a],
-                                (uint32_t)sizeof(pathStr),
-                                &strLen,
-                                pathStr));
-                        ALOGV(
-                                "  -> path = %lld `%s` -> `%s`",
-                                (long long)actionPathsBuffer[a],
-                                pathStr,
-                                stringBuffer);
-                    }
-                }
-            }
-        }
-    }
-    inputInitialized = qtrue;
+    ResetInput();
+    inputInitialized = qfalse;
 }
 
 static void IN_VRController( qboolean isRightController, XrPosef pose )
@@ -1316,18 +1600,11 @@ void IN_VRInputFrame( void )
     VR_processHaptics();
 
 	//trigger frame tick for haptics
-    VR_HapticEvent("frame_tick", 0, 0, 0, 0, 0);
-
-    if (leftControllerAimSpace == XR_NULL_HANDLE) {
-        leftControllerAimSpace = CreateActionSpace(handPoseLeftAction, leftHandPath);
-    }
-    if (rightControllerAimSpace == XR_NULL_HANDLE) {
-        rightControllerAimSpace = CreateActionSpace(handPoseRightAction, rightHandPath);
-    }
+    //VR_HapticEvent("frame_tick", 0, 0, 0, 0, 0);
 
     //button mapping
-    uint32_t lButtons = 0;
-    //if (GetActionStateBoolean(menuAction).currentState) lButtons |= ovrButton_Enter;
+    /*uint32_t lButtons = 0;
+    if (GetActionStateBoolean(menuAction).currentState) lButtons |= ovrButton_Enter;
     if (GetActionStateBoolean(buttonXAction).currentState) lButtons |= ovrButton_X;
     if (GetActionStateBoolean(buttonYAction).currentState) lButtons |= ovrButton_Y;
     if (GetActionStateFloat(gripLeftAction).currentState > 0.5f) lButtons |= ovrButton_GripTrigger;
@@ -1338,21 +1615,21 @@ void IN_VRInputFrame( void )
     if (GetActionStateBoolean(buttonBAction).currentState) rButtons |= ovrButton_B;
     if (GetActionStateFloat(gripRightAction).currentState > 0.5f) rButtons |= ovrButton_GripTrigger;
     if (GetActionStateBoolean(thumbstickRightClickAction).currentState) rButtons |= ovrButton_RThumb;
-    IN_VRButtons(qtrue, rButtons);
+    IN_VRButtons(qtrue, rButtons);*/
 
     //index finger click
     XrActionStateFloat indexState;
-    indexState = GetActionStateFloat(indexLeftAction);
+    indexState = GetActionStateFloat(grabAction, SIDE_LEFT);
     IN_VRTriggers(qfalse, indexState.currentState);
-    indexState = GetActionStateFloat(indexRightAction);
+    indexState = GetActionStateFloat(grabAction, SIDE_RIGHT);
     IN_VRTriggers(qtrue, indexState.currentState);
 
     //thumbstick
-    XrActionStateVector2f moveJoystickState;
+    /*XrActionStateVector2f moveJoystickState;
     moveJoystickState = GetActionStateVector2(moveOnLeftJoystickAction);
     IN_VRJoystick(qfalse, moveJoystickState.currentState.x, moveJoystickState.currentState.y);
     moveJoystickState = GetActionStateVector2(moveOnRightJoystickAction);
-    IN_VRJoystick(qtrue, moveJoystickState.currentState.x, moveJoystickState.currentState.y);
+    IN_VRJoystick(qtrue, moveJoystickState.currentState.x, moveJoystickState.currentState.y);*/
 
 	lastframetime = in_vrEventTime;
 	in_vrEventTime = Sys_Milliseconds( );
@@ -1360,36 +1637,20 @@ void IN_VRInputFrame( void )
 
 void IN_VRSyncActions( void )
 {
-    engine_t* engine = VR_GetEngine();
-
-    // Attach to session
-    if (!actionsAttached) {
-        XrSessionActionSetsAttachInfo attachInfo = {};
-        attachInfo.type = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO;
-        attachInfo.next = NULL;
-        attachInfo.countActionSets = 1;
-        attachInfo.actionSets = &runningActionSet;
-        OXR(xrAttachSessionActionSets(engine->appState.Session, &attachInfo));
-        actionsAttached = qtrue;
+    if (!inputInitialized)
+    {
+        InitializeActions();
+        inputInitialized = qtrue;
     }
 
-    // sync action data
-    XrActiveActionSet activeActionSet = {};
-    activeActionSet.actionSet = runningActionSet;
+    XrActiveActionSet activeActionSet;
+    activeActionSet.actionSet = actionSet;
     activeActionSet.subactionPath = XR_NULL_PATH;
-
-    XrActionsSyncInfo syncInfo = {};
+    XrActionsSyncInfo syncInfo;
     syncInfo.type = XR_TYPE_ACTIONS_SYNC_INFO;
-    syncInfo.next = NULL;
     syncInfo.countActiveActionSets = 1;
     syncInfo.activeActionSets = &activeActionSet;
-    OXR(xrSyncActions(engine->appState.Session, &syncInfo));
-
-    // query input action states
-    XrActionStateGetInfo getInfo = {};
-    getInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
-    getInfo.next = NULL;
-    getInfo.subactionPath = XR_NULL_PATH;
+    CHECK_XRCMD(xrSyncActions(VR_GetEngine()->appState.Session, &syncInfo));
 }
 
 void IN_VRUpdateControllers( XrPosef xfStageFromHead, float predictedDisplayTime )
@@ -1397,20 +1658,13 @@ void IN_VRUpdateControllers( XrPosef xfStageFromHead, float predictedDisplayTime
     engine_t* engine = VR_GetEngine();
 
     //get controller poses
-    XrAction controller[] = {handPoseLeftAction, handPoseRightAction};
-    XrPath subactionPath[] = {leftHandPath, rightHandPath};
-    XrSpace controllerSpace[] = {leftControllerAimSpace, rightControllerAimSpace};
     for (int i = 0; i < 2; i++) {
-        if (ActionPoseIsActive(controller[i], subactionPath[i])) {
-            XrSpaceLocation loc = {};
-            loc.type = XR_TYPE_SPACE_LOCATION;
-            OXR(xrLocateSpace(controllerSpace[i], engine->appState.HeadSpace, predictedDisplayTime, &loc));
+        XrSpaceLocation loc = {};
+        loc.type = XR_TYPE_SPACE_LOCATION;
+        OXR(xrLocateSpace(aimSpace[i], engine->appState.HeadSpace, predictedDisplayTime, &loc));
 
-            engine->appState.TrackedController[i].Active = (loc.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
-            engine->appState.TrackedController[i].Pose = XrPosef_Multiply(xfStageFromHead, loc.pose);
-        } else {
-            ovrTrackedController_Clear(&engine->appState.TrackedController[i]);
-        }
+        engine->appState.TrackedController[i].Active = (loc.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
+        engine->appState.TrackedController[i].Pose = XrPosef_Multiply(xfStageFromHead, loc.pose);
     }
 
     //apply controller poses

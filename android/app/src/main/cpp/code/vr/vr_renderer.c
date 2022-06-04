@@ -193,14 +193,14 @@ void VR_Recenter(engine_t* engine) {
     // Create a default stage space to use if SPACE_TYPE_STAGE is not
     // supported, or calls to xrGetReferenceSpaceBoundsRect fail.
     spaceCreateInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-    spaceCreateInfo.poseInReferenceSpace.position.y = -1.6750f;
+    spaceCreateInfo.poseInReferenceSpace.position.y = 0.0f;
     OXR(xrCreateReferenceSpace(engine->appState.Session, &spaceCreateInfo, &engine->appState.FakeStageSpace));
     ALOGV("Created fake stage space from local space with offset");
     engine->appState.CurrentSpace = engine->appState.FakeStageSpace;
 
     if (stageSupported) {
         spaceCreateInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_STAGE;
-        spaceCreateInfo.poseInReferenceSpace.position.y = 0.0f;
+        spaceCreateInfo.poseInReferenceSpace.position.y = 1.6750f;
         OXR(xrCreateReferenceSpace(engine->appState.Session, &spaceCreateInfo, &engine->appState.StageSpace));
         ALOGV("Created stage space");
         engine->appState.CurrentSpace = engine->appState.StageSpace;

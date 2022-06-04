@@ -180,8 +180,8 @@ static void Comfort_MenuInit( void ) {
 	s_comfort.heightadjust.generic.name	     = "Height Adjust:";
 	s_comfort.heightadjust.generic.id 	     = ID_HEIGHTADJUST;
 	s_comfort.heightadjust.generic.callback  	= Comfort_MenuEvent;
-	s_comfort.heightadjust.minvalue		     = 0.0f;
-	s_comfort.heightadjust.maxvalue		     = 1.0f;
+	s_comfort.heightadjust.minvalue		     = 1.0f;
+	s_comfort.heightadjust.maxvalue		     = 2.0f;
 
     y += BIGCHAR_HEIGHT+2;
     s_comfort.rollhit.generic.type        = MTYPE_RADIOBUTTON;

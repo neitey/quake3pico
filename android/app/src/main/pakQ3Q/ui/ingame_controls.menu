@@ -362,7 +362,7 @@ itemDef {
 		group grpControls
       		type ITEM_TYPE_SLIDER
 		text "Height Adjust:"
-		cvarfloat "vr_heightAdjust" 0.2 0 1
+		cvarfloat "vr_heightAdjust" 0.1 1 2
 		rect 30 271 200 20
       		textalign ITEM_ALIGN_RIGHT
       		textalignx 143

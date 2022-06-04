@@ -91,7 +91,8 @@ int main(int argc, char* argv[]) {
 				paused = qtrue;
 			} else if (hasFocus && paused) {
 				//Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_CONSOLE, qtrue, 0, NULL );
-				Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_ESCAPE, qtrue, 0, NULL );
+				//commented because Pico does not have context menu button
+				//Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_ESCAPE, qtrue, 0, NULL );
 				paused = qfalse;
 			}
 		}

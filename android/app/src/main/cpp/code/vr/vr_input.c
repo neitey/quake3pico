@@ -1604,7 +1604,7 @@ void IN_VRInputFrame( void )
 
     //button mapping
     uint32_t lButtons = 0;
-    if (GetActionStateBoolean(homeAction, SIDE_LEFT).currentState) lButtons |= ovrButton_Enter;
+    //if (GetActionStateBoolean(menuClickPath, SIDE_LEFT).currentState) lButtons |= ovrButton_Enter;
     if (GetActionStateBoolean(XAction, SIDE_LEFT).currentState) lButtons |= ovrButton_X;
     if (GetActionStateBoolean(YAction, SIDE_LEFT).currentState) lButtons |= ovrButton_Y;
     if (GetActionStateBoolean(sideAction, SIDE_LEFT).currentState) lButtons |= ovrButton_GripTrigger;
@@ -1618,11 +1618,11 @@ void IN_VRInputFrame( void )
     IN_VRButtons(qtrue, rButtons);
 
     //index finger click
-    XrActionStateBoolean indexState;
-    indexState = GetActionStateBoolean(grabAction, SIDE_LEFT);
-    IN_VRTriggers(qfalse, indexState.currentState ? 1 : 0);
-    indexState = GetActionStateBoolean(grabAction, SIDE_RIGHT);
-    IN_VRTriggers(qtrue, indexState.currentState ? 1 : 0);
+    XrActionStateFloat indexState;
+    indexState = GetActionStateFloat(triggerAction, SIDE_LEFT);
+    IN_VRTriggers(qfalse, indexState.currentState);
+    indexState = GetActionStateFloat(triggerAction, SIDE_RIGHT);
+    IN_VRTriggers(qtrue, indexState.currentState);
 
     //thumbstick
     XrActionStateVector2f moveJoystickState;

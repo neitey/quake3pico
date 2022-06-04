@@ -587,7 +587,7 @@ XrActionStateBoolean GetActionStateBoolean(XrAction action, int hand) {
 
     XrActionStateBoolean state = {};
     state.type = XR_TYPE_ACTION_STATE_BOOLEAN;
-    OXR(xrGetActionStateBoolean(VR_GetEngine()->appState.Session, &getInfo, &state));
+    CHECK_XRCMD(xrGetActionStateBoolean(VR_GetEngine()->appState.Session, &getInfo, &state));
     return state;
 }
 
@@ -600,7 +600,7 @@ XrActionStateFloat GetActionStateFloat(XrAction action, int hand) {
 
     XrActionStateFloat state = {};
     state.type = XR_TYPE_ACTION_STATE_FLOAT;
-    OXR(xrGetActionStateFloat(VR_GetEngine()->appState.Session, &getInfo, &state));
+    CHECK_XRCMD(xrGetActionStateFloat(VR_GetEngine()->appState.Session, &getInfo, &state));
     return state;
 }
 
@@ -613,7 +613,7 @@ XrActionStateVector2f GetActionStateVector2(XrAction action, int hand) {
 
     XrActionStateVector2f state = {};
     state.type = XR_TYPE_ACTION_STATE_VECTOR2F;
-    OXR(xrGetActionStateVector2f(VR_GetEngine()->appState.Session, &getInfo, &state));
+    CHECK_XRCMD(xrGetActionStateVector2f(VR_GetEngine()->appState.Session, &getInfo, &state));
     return state;
 }
 
@@ -1603,33 +1603,33 @@ void IN_VRInputFrame( void )
     //VR_HapticEvent("frame_tick", 0, 0, 0, 0, 0);
 
     //button mapping
-    /*uint32_t lButtons = 0;
-    if (GetActionStateBoolean(menuAction).currentState) lButtons |= ovrButton_Enter;
-    if (GetActionStateBoolean(buttonXAction).currentState) lButtons |= ovrButton_X;
-    if (GetActionStateBoolean(buttonYAction).currentState) lButtons |= ovrButton_Y;
-    if (GetActionStateFloat(gripLeftAction).currentState > 0.5f) lButtons |= ovrButton_GripTrigger;
-    if (GetActionStateBoolean(thumbstickLeftClickAction).currentState) lButtons |= ovrButton_LThumb;
+    uint32_t lButtons = 0;
+    if (GetActionStateBoolean(homeAction, SIDE_LEFT).currentState) lButtons |= ovrButton_Enter;
+    if (GetActionStateBoolean(XAction, SIDE_LEFT).currentState) lButtons |= ovrButton_X;
+    if (GetActionStateBoolean(YAction, SIDE_LEFT).currentState) lButtons |= ovrButton_Y;
+    if (GetActionStateBoolean(sideAction, SIDE_LEFT).currentState) lButtons |= ovrButton_GripTrigger;
+    if (GetActionStateBoolean(touchpadAction, SIDE_LEFT).currentState) lButtons |= ovrButton_LThumb;
     IN_VRButtons(qfalse, lButtons);
     uint32_t rButtons = 0;
-    if (GetActionStateBoolean(buttonAAction).currentState) rButtons |= ovrButton_A;
-    if (GetActionStateBoolean(buttonBAction).currentState) rButtons |= ovrButton_B;
-    if (GetActionStateFloat(gripRightAction).currentState > 0.5f) rButtons |= ovrButton_GripTrigger;
-    if (GetActionStateBoolean(thumbstickRightClickAction).currentState) rButtons |= ovrButton_RThumb;
-    IN_VRButtons(qtrue, rButtons);*/
+    if (GetActionStateBoolean(AAction, SIDE_RIGHT).currentState) rButtons |= ovrButton_A;
+    if (GetActionStateBoolean(BAction, SIDE_RIGHT).currentState) rButtons |= ovrButton_B;
+    if (GetActionStateBoolean(sideAction, SIDE_RIGHT).currentState) rButtons |= ovrButton_GripTrigger;
+    if (GetActionStateBoolean(touchpadAction, SIDE_RIGHT).currentState) rButtons |= ovrButton_RThumb;
+    IN_VRButtons(qtrue, rButtons);
 
     //index finger click
-    XrActionStateFloat indexState;
-    indexState = GetActionStateFloat(grabAction, SIDE_LEFT);
-    IN_VRTriggers(qfalse, indexState.currentState);
-    indexState = GetActionStateFloat(grabAction, SIDE_RIGHT);
-    IN_VRTriggers(qtrue, indexState.currentState);
+    XrActionStateBoolean indexState;
+    indexState = GetActionStateBoolean(grabAction, SIDE_LEFT);
+    IN_VRTriggers(qfalse, indexState.currentState ? 1 : 0);
+    indexState = GetActionStateBoolean(grabAction, SIDE_RIGHT);
+    IN_VRTriggers(qtrue, indexState.currentState ? 1 : 0);
 
     //thumbstick
-    /*XrActionStateVector2f moveJoystickState;
-    moveJoystickState = GetActionStateVector2(moveOnLeftJoystickAction);
+    XrActionStateVector2f moveJoystickState;
+    moveJoystickState = GetActionStateVector2(joystickAction, SIDE_LEFT);
     IN_VRJoystick(qfalse, moveJoystickState.currentState.x, moveJoystickState.currentState.y);
-    moveJoystickState = GetActionStateVector2(moveOnRightJoystickAction);
-    IN_VRJoystick(qtrue, moveJoystickState.currentState.x, moveJoystickState.currentState.y);*/
+    moveJoystickState = GetActionStateVector2(joystickAction, SIDE_RIGHT);
+    IN_VRJoystick(qtrue, moveJoystickState.currentState.x, moveJoystickState.currentState.y);
 
 	lastframetime = in_vrEventTime;
 	in_vrEventTime = Sys_Milliseconds( );

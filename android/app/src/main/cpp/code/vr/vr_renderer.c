@@ -377,7 +377,7 @@ void VR_DrawFrame( engine_t* engine ) {
 
     // Update HMD and controllers
     IN_VRUpdateHMD( invViewTransform[0] );
-    IN_VRUpdateControllers( invViewTransform[0], frameState.predictedDisplayTime );
+    IN_VRUpdateControllers( frameState.predictedDisplayTime );
     IN_VRSyncActions();
 
     const ovrMatrix4f projectionMatrix = ovrMatrix4f_CreateProjectionFov(

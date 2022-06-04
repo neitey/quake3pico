@@ -14,12 +14,20 @@ qboolean vr_initialized = qfalse;
 extern vr_clientinfo_t vr;
 
 #define XR_PICO_ANDROID_CONTROLLER_FUNCTION_EXT_ENABLE_EXTENSION_NAME "XR_PICO_android_controller_function_ext_enable"
+#define XR_PICO_VIEW_STATE_EXT_ENABLE_EXTENSION_NAME "XR_PICO_view_state_ext_enable"
+#define XR_PICO_FRAME_END_INFO_EXT_EXTENSION_NAME "XR_PICO_frame_end_info_ext"
+#define XR_PICO_CONFIGS_EXT_EXTENSION_NAME "XR_PICO_configs_ext"
+#define XR_PICO_RESET_SENSOR_EXTENSION_NAME "XR_PICO_reset_sensor"
 
 const char* const requiredExtensionNames[] = {
         XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME,
         XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME,
         XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME,
-        XR_PICO_ANDROID_CONTROLLER_FUNCTION_EXT_ENABLE_EXTENSION_NAME};
+        XR_PICO_ANDROID_CONTROLLER_FUNCTION_EXT_ENABLE_EXTENSION_NAME,
+        XR_PICO_VIEW_STATE_EXT_ENABLE_EXTENSION_NAME,
+        XR_PICO_FRAME_END_INFO_EXT_EXTENSION_NAME,
+        XR_PICO_CONFIGS_EXT_EXTENSION_NAME,
+        XR_PICO_RESET_SENSOR_EXTENSION_NAME};
 const uint32_t numRequiredExtensions =
         sizeof(requiredExtensionNames) / sizeof(requiredExtensionNames[0]);
 

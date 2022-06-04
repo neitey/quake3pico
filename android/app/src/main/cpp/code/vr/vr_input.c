@@ -1653,7 +1653,7 @@ void IN_VRSyncActions( void )
     CHECK_XRCMD(xrSyncActions(VR_GetEngine()->appState.Session, &syncInfo));
 }
 
-void IN_VRUpdateControllers( XrPosef xfStageFromHead, float predictedDisplayTime )
+void IN_VRUpdateControllers( float predictedDisplayTime )
 {
     engine_t* engine = VR_GetEngine();
 
@@ -1661,10 +1661,13 @@ void IN_VRUpdateControllers( XrPosef xfStageFromHead, float predictedDisplayTime
     for (int i = 0; i < 2; i++) {
         XrSpaceLocation loc = {};
         loc.type = XR_TYPE_SPACE_LOCATION;
-        OXR(xrLocateSpace(aimSpace[i], engine->appState.HeadSpace, predictedDisplayTime, &loc));
+        XrResult res = xrLocateSpace(aimSpace[i], engine->appState.CurrentSpace, predictedDisplayTime, &loc);
+        if (res != XR_SUCCESS) {
+            Com_Printf("xrLocateSpace error: %d", (int)res);
+        }
 
         engine->appState.TrackedController[i].Active = (loc.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
-        engine->appState.TrackedController[i].Pose = XrPosef_Multiply(xfStageFromHead, loc.pose);
+        engine->appState.TrackedController[i].Pose = loc.pose;
     }
 
     //apply controller poses

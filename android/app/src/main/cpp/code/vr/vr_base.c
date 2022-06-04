@@ -19,6 +19,26 @@ extern vr_clientinfo_t vr;
 #define XR_PICO_CONFIGS_EXT_EXTENSION_NAME "XR_PICO_configs_ext"
 #define XR_PICO_RESET_SENSOR_EXTENSION_NAME "XR_PICO_reset_sensor"
 
+enum ConfigsSetEXT
+{
+    UNREAL_VERSION = 0,
+    TRACKING_ORIGIN,
+    OPENGL_NOERROR,
+    ENABLE_SIX_DOF,
+    PRESENTATION_FLAG,
+    ENABLE_CPT,
+    PLATFORM,
+    FOVEATION_LEVEL,
+    SET_DISPLAY_RATE = 8,
+    MRC_TEXTURE_ID = 9,
+};
+
+typedef XrResult (XRAPI_PTR *PFN_xrSetConfigPICO) (
+XrSession                             session,
+enum ConfigsSetEXT                    configIndex,
+char *                                configData);
+PFN_xrSetConfigPICO    pfnXrSetConfigPICO;
+
 const char* const requiredExtensionNames[] = {
         XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME,
         XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME,
@@ -124,6 +144,7 @@ engine_t* VR_Init( ovrJava java )
     }
 
     InitializeGraphicDeivce(vr_engine.appState.Instance);
+    xrGetInstanceProcAddr(vr_engine.appState.Instance,"xrSetConfigPICO", (PFN_xrVoidFunction*)(&pfnXrSetConfigPICO));
     Pxr_SetEngineVersion("2.8.0.1");
     Pxr_StartCVControllerThread(PXR_HMD_6DOF, PXR_CONTROLLER_6DOF);
 
@@ -344,6 +365,7 @@ void VR_EnterVR( engine_t* engine, ovrJava java ) {
         ALOGE("Failed to create XR session: %d.", initResult);
         exit(1);
     }
+    pfnXrSetConfigPICO(engine->appState.Session, TRACKING_ORIGIN, "1");
 
     // Create a space to the first path
     XrReferenceSpaceCreateInfo spaceCreateInfo = {};

@@ -201,12 +201,23 @@ static float length(float x, float y)
 
 void NormalizeAngles(vec3_t angles)
 {
-    while (angles[0] >= 90) angles[0] -= 180;
-    while (angles[1] >= 180) angles[1] -= 360;
-    while (angles[2] >= 180) angles[2] -= 360;
-    while (angles[0] < -90) angles[0] += 180;
-    while (angles[1] < -180) angles[1] += 360;
-    while (angles[2] < -180) angles[2] += 360;
+    while (angles[PITCH] >= 90)
+    {
+        angles[PITCH] -= 180;
+        angles[YAW] -= 180;
+        angles[ROLL] -= 180;
+    }
+    while (angles[PITCH] < -90)
+    {
+        angles[PITCH] += 180;
+        angles[YAW] += 180;
+        angles[ROLL] += 180;
+    }
+
+    while (angles[YAW] >= 180) angles[YAW] -= 360;
+    while (angles[YAW] < -180) angles[YAW] += 360;
+    while (angles[ROLL] >= 180) angles[ROLL] -= 360;
+    while (angles[ROLL] < -180) angles[ROLL] += 360;
 }
 
 void GetAnglesFromVectors(const XrVector3f forward, const XrVector3f right, const XrVector3f up, vec3_t angles)

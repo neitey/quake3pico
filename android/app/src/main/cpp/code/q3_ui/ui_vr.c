@@ -399,7 +399,7 @@ static void VR_MenuInit( void ) {
 	s_VR.snapturn.itemnames	        	= s_snapturn;
 	s_VR.snapturn.numitems				= 3;
 
-	y += BIGCHAR_HEIGHT;
+	//y += BIGCHAR_HEIGHT;
 	s_VR.directionmode.generic.type			= MTYPE_SPINCONTROL;
 	s_VR.directionmode.generic.flags			= QMF_PULSEIFFOCUS|QMF_SMALLFONT;
 	s_VR.directionmode.generic.x				= VR_X_POS;
@@ -560,7 +560,7 @@ static void VR_MenuInit( void ) {
 	Menu_AddItem( &s_VR.menu, &s_VR.righthanded );
 	Menu_AddItem( &s_VR.menu, &s_VR.autoswitch );
 	Menu_AddItem( &s_VR.menu, &s_VR.snapturn );
-	Menu_AddItem( &s_VR.menu, &s_VR.directionmode );
+	//Menu_AddItem( &s_VR.menu, &s_VR.directionmode );
 	Menu_AddItem( &s_VR.menu, &s_VR.refreshrate );
 	Menu_AddItem( &s_VR.menu, &s_VR.weaponpitch );
 	Menu_AddItem( &s_VR.menu, &s_VR.heightadjust );

@@ -336,7 +336,7 @@ static void Controls3_MenuInit( void ) {
     s_controls3.twohanded.generic.x	          = VR_X_POS;
     s_controls3.twohanded.generic.y	          = y;
 
-	y += BIGCHAR_HEIGHT+2;
+	//y += BIGCHAR_HEIGHT+2;
 	s_controls3.directionmode.generic.type			= MTYPE_SPINCONTROL;
 	s_controls3.directionmode.generic.flags			= QMF_PULSEIFFOCUS|QMF_SMALLFONT;
 	s_controls3.directionmode.generic.x				= VR_X_POS;
@@ -436,7 +436,7 @@ static void Controls3_MenuInit( void ) {
 	Menu_AddItem( &s_controls3.menu, &s_controls3.autoswitch );
 	Menu_AddItem( &s_controls3.menu, &s_controls3.scope );
 	Menu_AddItem( &s_controls3.menu, &s_controls3.twohanded );
-	Menu_AddItem( &s_controls3.menu, &s_controls3.directionmode );
+	//Menu_AddItem( &s_controls3.menu, &s_controls3.directionmode );
 	Menu_AddItem( &s_controls3.menu, &s_controls3.snapturn );
 	Menu_AddItem( &s_controls3.menu, &s_controls3.uturn );
 	Menu_AddItem( &s_controls3.menu, &s_controls3.righthanded );

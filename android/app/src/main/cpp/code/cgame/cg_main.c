@@ -1988,7 +1988,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 #else
 	vr->single_player = trap_Cvar_VariableValue( "g_gametype" ) == GT_SINGLE_PLAYER;
 #endif
-	vr->use_fake_6dof = !vr->single_player;
+	vr->use_fake_6dof = qfalse;//!vr->single_player;
 }
 
 /*

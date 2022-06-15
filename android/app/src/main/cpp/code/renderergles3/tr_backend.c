@@ -367,14 +367,7 @@ void RB_BeginDrawingView (void) {
 	// ensures that depth writes are enabled for the depth clear
 	GL_State( GLS_DEFAULT );
 	// clear relevant buffers
-    if( VR_RenderMotionVector() )
-    {
-        clearBits = 0;
-    }
-    else
-    {
-        clearBits = GL_DEPTH_BUFFER_BIT;
-    }
+	clearBits = GL_DEPTH_BUFFER_BIT;
 
 	if ( r_measureOverdraw->integer || r_shadows->integer == 2 )
 	{

@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ENABLE_GL_DEBUG 1
+#define ENABLE_GL_DEBUG 0
 #define ENABLE_GL_DEBUG_VERBOSE 0
 #if ENABLE_GL_DEBUG
 #include <GLES3/gl32.h>
@@ -24,7 +24,7 @@ extern cvar_t *vr_heightAdjust;
 extern cvar_t *vr_spacewarp;
 
 XrView* projections;
-XrPosef prevInvViewTransform[2];
+XrPosef prevXrSpacePoseInWorld;
 qboolean fullscreenMode = qfalse;
 qboolean stageSupported = qfalse;
 qboolean renderMotionVector = qfalse;
@@ -315,8 +315,7 @@ void VR_InitRenderer( engine_t* engine ) {
             spaceWarpProperties.recommendedMotionVectorImageRectWidth,
             spaceWarpProperties.recommendedMotionVectorImageRectHeight);
 
-    prevInvViewTransform[0] = XrPosef_Identity();
-    prevInvViewTransform[1] = XrPosef_Identity();
+    prevXrSpacePoseInWorld = XrPosef_Identity();
 }
 
 void VR_DestroyRenderer( engine_t* engine )
@@ -471,11 +470,9 @@ void VR_DrawFrame( engine_t* engine ) {
     //
 
     XrFovf fov = {};
-    XrPosef viewTransform[2];
     XrPosef invViewTransform[2];
     for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
         invViewTransform[eye] = projections[eye].pose;
-        viewTransform[eye] = XrPosef_Inverse(projections[eye].pose);
 
         fov.angleLeft += projections[eye].fov.angleLeft / 2.0f;
         fov.angleRight += projections[eye].fov.angleRight / 2.0f;
@@ -492,6 +489,14 @@ void VR_DrawFrame( engine_t* engine ) {
 
     engine->appState.LayerCount = 0;
     memset(engine->appState.Layers, 0, sizeof(ovrCompositorLayer_Union) * ovrMaxLayerCount);
+
+    // Get pose from game
+    const XrVector3f axisY = {0.0f, 1.0f, 0.0f};
+    XrPosef XrSpacePoseInWorld = XrPosef_Identity();
+    XrSpacePoseInWorld.orientation = XrQuaternionf_CreateFromVectorAngle(axisY, vr.recenterYaw);
+    XrSpacePoseInWorld.position.x = vr.hmdorigin[0];
+    XrSpacePoseInWorld.position.y = vr.hmdorigin[1];
+    XrSpacePoseInWorld.position.z = vr.hmdorigin[2];
 
     XrCompositionLayerProjectionView projection_layer_elements[2] = {};
     XrCompositionLayerSpaceWarpInfoFB proj_spacewarp_views[2] = {};
@@ -548,7 +553,7 @@ void VR_DrawFrame( engine_t* engine ) {
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.width = frameBuffer->MotionVectorDepthSwapChain.Width;
                 proj_spacewarp_views[eye].depthSubImage.imageRect.extent.height = frameBuffer->MotionVectorDepthSwapChain.Height;
                 proj_spacewarp_views[eye].depthSubImage.imageArrayIndex = eye;
-                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(prevInvViewTransform[eye], viewTransform[eye]);
+                proj_spacewarp_views[eye].appSpaceDeltaPose = XrPosef_Multiply(prevXrSpacePoseInWorld, XrSpacePoseInWorld);
 
                 proj_spacewarp_views[eye].minDepth = 0.0f;
                 proj_spacewarp_views[eye].maxDepth = 1.0f;
@@ -618,8 +623,7 @@ void VR_DrawFrame( engine_t* engine ) {
     ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
     frameBuffer->TextureSwapChainIndex++;
     frameBuffer->TextureSwapChainIndex %= frameBuffer->TextureSwapChainLength;
-    prevInvViewTransform[0] = invViewTransform[0];
-    prevInvViewTransform[1] = invViewTransform[1];
+    prevXrSpacePoseInWorld = XrSpacePoseInWorld;
 }
 
 

@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 backEndData_t	*backEndData;
 backEndState_t	backEnd;
-float		prevModelMatrix[16];
+float		prevModelMatrix[PROJECTION_COUNT][16];
 
 static float	s_flipMatrix[16] = {
 	// convert from our coordinate system (looking down X)
@@ -449,6 +449,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 	backEnd.pc.c_surfaces += numDrawSurfs;
 
+	uint32_t projection = GLSL_CalculateProjection();
 	for (i = 0, drawSurf = drawSurfs ; i < numDrawSurfs ; i++, drawSurf++) {
 		if ( drawSurf->sort == oldSort && drawSurf->cubemapIndex == oldCubemapIndex) {
 			if (backEnd.depthFill && shader && shader->sort != SS_OPAQUE)
@@ -526,9 +527,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			}
 
             if (!VR_RenderMotionVector()) {
-                memcpy( &backEnd.currentEntity->prevModelMatrix[0], &backEnd.or.modelMatrix[0], sizeof(float) * 16);
+                memcpy( &backEnd.currentEntity->prevModelMatrix[projection][0], &backEnd.or.modelMatrix[0], sizeof(float) * 16);
             } else {
-				GL_SetPrevModelMatrix( backEnd.currentEntity->prevModelMatrix );
+				GL_SetPrevModelMatrix( backEnd.currentEntity->prevModelMatrix[projection] );
             }
 			GL_SetModelMatrix( backEnd.or.modelMatrix );
             GL_SetProjectionMatrix( backEnd.viewParms.projectionMatrix );
@@ -581,9 +582,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 	// go back to the world model matrix
 	if (!VR_RenderMotionVector()) {
-		memcpy( &prevModelMatrix[0], &backEnd.viewParms.world.modelMatrix[0], sizeof(float) * 16);
+		memcpy( &prevModelMatrix[projection][0], &backEnd.viewParms.world.modelMatrix[0], sizeof(float) * 16);
 	} else {
-		GL_SetPrevModelMatrix( prevModelMatrix );
+		GL_SetPrevModelMatrix( prevModelMatrix[projection] );
 	}
 	GL_SetModelMatrix( backEnd.viewParms.world.modelMatrix );
 

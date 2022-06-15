@@ -90,6 +90,18 @@ typedef struct dlight_s {
 } dlight_t;
 
 
+typedef enum {
+    FULLSCREEN_ORTHO_PROJECTION, // Orthographic projection and no stereo view for fullscreen rendering
+    HUDBUFFER_ORTHO_PROJECTION, // Orthographic projection and no stereo view for the HUD buffer
+    STEREO_ORTHO_PROJECTION, // Orthographic projection with a slight stereo offset per eye for the static hud
+    VR_PROJECTION,
+    MIRROR_VR_PROJECTION, // For mirrors etc
+    MONO_VR_PROJECTION,
+
+    PROJECTION_COUNT
+} projection_t;
+
+
 // a trRefEntity_t has all the information passed in by
 // the client game, as well as some locally derived info
 typedef struct {
@@ -106,7 +118,7 @@ typedef struct {
 	int			ambientLightInt;	// 32 bit rgba packed
 	vec3_t		directedLight;
 
-	float		prevModelMatrix[16];
+	float		prevModelMatrix[PROJECTION_COUNT][16];
 } trRefEntity_t;
 
 
@@ -2264,6 +2276,7 @@ void GLSL_ShutdownGPUShaders(void);
 void GLSL_VertexAttribPointers(uint32_t attribBits);
 void GLSL_BindProgram(shaderProgram_t * program);
 void GLSL_BindBuffers( shaderProgram_t * program );
+uint32_t GLSL_CalculateProjection(void);
 
 void GLSL_SetUniformInt(shaderProgram_t *program, int uniformNum, GLint value);
 void GLSL_SetUniformFloat(shaderProgram_t *program, int uniformNum, GLfloat value);

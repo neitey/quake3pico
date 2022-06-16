@@ -446,7 +446,7 @@ void VR_DrawFrame( engine_t* engine ) {
     beginFrameDesc.type = XR_TYPE_FRAME_BEGIN_INFO;
     beginFrameDesc.next = NULL;
     OXR(xrBeginFrame(engine->appState.Session, &beginFrameDesc));
-    Com_PreFrame();
+
 
     XrViewLocateInfo projectionInfo = {};
     projectionInfo.type = XR_TYPE_VIEW_LOCATE_INFO;
@@ -480,6 +480,15 @@ void VR_DrawFrame( engine_t* engine ) {
     }
     vr.fov_x = (fabs(fov.angleLeft) + fabs(fov.angleRight)) * 180.0f / M_PI;
     vr.fov_y = (fabs(fov.angleUp) + fabs(fov.angleDown)) * 180.0f / M_PI;
+
+    Com_PreFrame();
+    if (vr_spacewarp->integer) {
+        IN_VRUpdateHMD( invViewTransform[0] );
+        IN_VRUpdateControllers( invViewTransform[0], frameState.predictedDisplayTime );
+        IN_VRSyncActions();
+        Com_PostFrame();
+        Com_PreFrame();
+    }
 
     // Update HMD and controllers
     IN_VRUpdateHMD( invViewTransform[0] );

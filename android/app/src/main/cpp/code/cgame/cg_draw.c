@@ -767,7 +767,11 @@ static float CG_DrawFPS( float y ) {
 		}
 		fps = 1000 * FPS_FRAMES / total;
 
-		s = va( "%ifps", fps );
+		if ((int)trap_Cvar_VariableValue( "vr_spaceWarp" )) {
+			s = va( "%ifps", fps + fps );
+		} else {
+			s = va( "%ifps", fps );
+		}
 		w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 
 		CG_DrawBigString( 635 - w, y + 2, s, 1.0F);
@@ -2955,7 +2959,7 @@ void CG_DrawActive( void ) {
         //Now draw the screen 2D stuff
         CG_DrawScreen2D();
 
-        if (!vr->weapon_zoomed)
+        if (!vr->weapon_zoomed && !vr->drawingMotionVector)
 		{
 			cg.drawingHUD = qtrue;
 
@@ -2963,10 +2967,7 @@ void CG_DrawActive( void ) {
 			trap_R_HUDBufferStart(qtrue);
 
 			// draw status bar and other floating elements
-			if ((int)trap_Cvar_VariableValue( "vr_spaceWarp" ) == 0)
-			{
-				CG_DrawHUD2D();	//TODO: move rendering HUD into OpenXR render layer
-			}
+			CG_DrawHUD2D();
 
 			trap_R_HUDBufferEnd();
 

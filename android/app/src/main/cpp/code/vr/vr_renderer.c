@@ -27,7 +27,6 @@ XrView* projections;
 XrPosef prevXrSpacePoseInWorld;
 qboolean fullscreenMode = qfalse;
 qboolean stageSupported = qfalse;
-qboolean renderMotionVector = qfalse;
 
 void VR_UpdateStageBounds(ovrApp* pappState) {
     XrExtent2Df stageBounds = {};
@@ -509,9 +508,9 @@ void VR_DrawFrame( engine_t* engine ) {
         }
 
         if (vr_spacewarp->integer) {
-            renderMotionVector = qtrue;
+            vr.drawingMotionVector = qtrue;
             VR_RenderScene( engine, fov, qtrue );
-            renderMotionVector = qfalse;
+            vr.drawingMotionVector = qfalse;
             VR_RenderScene( engine, fov, qfalse );
         } else {
             VR_RenderScene( engine, fov, qfalse );
@@ -628,5 +627,5 @@ void VR_DrawFrame( engine_t* engine ) {
 
 
 int VR_RenderMotionVector() {
-    return renderMotionVector;
+    return vr.drawingMotionVector;
 }

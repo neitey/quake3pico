@@ -767,11 +767,7 @@ static float CG_DrawFPS( float y ) {
 		}
 		fps = 1000 * FPS_FRAMES / total;
 
-		if ((int)trap_Cvar_VariableValue( "vr_spaceWarp" )) {
-			s = va( "%ifps", fps + fps );
-		} else {
-			s = va( "%ifps", fps );
-		}
+		s = va( "%ifps", fps );
 		w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 
 		CG_DrawBigString( 635 - w, y + 2, s, 1.0F);
@@ -2959,7 +2955,7 @@ void CG_DrawActive( void ) {
         //Now draw the screen 2D stuff
         CG_DrawScreen2D();
 
-        if (!vr->weapon_zoomed && !vr->drawingMotionVector)
+        if (!vr->weapon_zoomed)
 		{
 			cg.drawingHUD = qtrue;
 
@@ -2972,6 +2968,7 @@ void CG_DrawActive( void ) {
 			trap_R_HUDBufferEnd();
 
 			cg.drawingHUD = qfalse;
+			vr->drawingMotionVector = qfalse;
 		}
 	}
 

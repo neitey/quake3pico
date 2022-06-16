@@ -566,9 +566,6 @@ Draws the last few lines of output transparently over the game top
 */
 void Con_DrawNotify (void)
 {
-	if (vr.drawingMotionVector)
-		return;
-
 	int		x, v;
 	short	*text;
 	int		i;

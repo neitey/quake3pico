@@ -208,6 +208,7 @@ void VR_Recenter(engine_t* engine) {
 
     // Update menu orientation
     vr.menuYaw = 0;
+    vr.flickStickCurrent = 0;
 }
 
 void VR_InitRenderer( engine_t* engine ) {

@@ -104,6 +104,7 @@ extern cvar_t *vr_twoHandedWeapons;
 extern cvar_t *vr_refreshrate;
 extern cvar_t *vr_weaponScope;
 extern cvar_t *vr_hapticIntensity;
+extern cvar_t *vr_useFlickStick;
 
 jclass callbackClass;
 jmethodID android_haptic_event;
@@ -1098,6 +1099,19 @@ static void IN_VRJoystick( qboolean isRightController, float joystickX, float jo
 
             //forward/back
             Com_QueueEvent(in_vrEventTime, SE_JOYSTICK_AXIS, 1, joystick[1] * 127.0f + positional[1] * 127.0f, 0, NULL);
+        }
+
+        // flick stick
+        else if (vr_useFlickStick)
+        {
+            float joystickValue = length(joystickX, joystickY);
+            if (joystickValue > thumbstickPressedThreshold) {
+                float flickStickCurrent = RAD2DEG(atan2(joystickX, joystickY));
+                CL_SnapTurn(flickStickCurrent - vr.flickStickCurrent);
+                vr.flickStickCurrent = flickStickCurrent;
+            } else {
+                vr.flickStickCurrent = 0;
+            }
         }
 
         // In case thumbstick is used by weapon wheel (is in HMD/thumbstick mode), ignore standard thumbstick inputs

@@ -47,6 +47,7 @@ cvar_t *vr_weaponSelectorWithHud = NULL;
 cvar_t *vr_goreLevel = NULL;
 cvar_t *vr_hudDrawStatus = NULL;
 cvar_t *vr_showConsoleMessages = NULL;
+cvar_t *vr_useFlickStick = NULL;
 
 engine_t* VR_Init( ovrJava java )
 {
@@ -166,6 +167,7 @@ void VR_InitCvars( void )
 	vr_goreLevel = Cvar_Get ("vr_goreLevel", "2", CVAR_ARCHIVE);
 	vr_hudDrawStatus = Cvar_Get ("vr_hudDrawStatus", "1", CVAR_ARCHIVE); // 0 - no hud, 1 - in-world hud, 2 - performance (static HUD)
 	vr_showConsoleMessages = Cvar_Get ("vr_showConsoleMessages", "1", CVAR_ARCHIVE);
+	vr_useFlickStick = Cvar_Get ("vr_useFlickStick", "1", CVAR_ARCHIVE);
 
 	// Values are:  scale,right,up,forward,pitch,yaw,roll
 	// VALUES PROVIDED BY SkillFur - Thank-you!
@@ -272,6 +274,7 @@ void VR_InitCvars( void )
 
     vr.menuYaw = 0;
     vr.recenterYaw = 0;
+    vr.flickStickCurrent = 0;
 }
 
 void VR_Destroy( engine_t* engine )

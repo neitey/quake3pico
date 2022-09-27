@@ -1615,13 +1615,14 @@ void IN_VRInputFrame( void )
 
     //button mapping
     uint32_t lButtons = 0;
-    //if (GetActionStateBoolean(menuClickPath, SIDE_LEFT).currentState) lButtons |= ovrButton_Enter;
+    if (GetActionStateBoolean(backAction, SIDE_LEFT).currentState) lButtons |= ovrButton_Enter;
     if (GetActionStateBoolean(XAction, SIDE_LEFT).currentState) lButtons |= ovrButton_X;
     if (GetActionStateBoolean(YAction, SIDE_LEFT).currentState) lButtons |= ovrButton_Y;
     if (GetActionStateBoolean(sideAction, SIDE_LEFT).currentState) lButtons |= ovrButton_GripTrigger;
     if (GetActionStateBoolean(touchpadAction, SIDE_LEFT).currentState) lButtons |= ovrButton_LThumb;
     IN_VRButtons(qfalse, lButtons);
     uint32_t rButtons = 0;
+    if (GetActionStateBoolean(backAction, SIDE_RIGHT).currentState) rButtons |= ovrButton_Enter;
     if (GetActionStateBoolean(AAction, SIDE_RIGHT).currentState) rButtons |= ovrButton_A;
     if (GetActionStateBoolean(BAction, SIDE_RIGHT).currentState) rButtons |= ovrButton_B;
     if (GetActionStateBoolean(sideAction, SIDE_RIGHT).currentState) rButtons |= ovrButton_GripTrigger;

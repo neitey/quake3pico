@@ -380,6 +380,10 @@ void VR_DrawFrame( engine_t* engine ) {
     IN_VRUpdateControllers( frameState.predictedDisplayTime );
     IN_VRSyncActions();
 
+    //Projection used for drawing HUD models etc
+    float hudScale = M_PI * 15.0f / 180.0f;
+    const ovrMatrix4f monoVRMatrix = ovrMatrix4f_CreateProjectionFov(
+            -hudScale, hudScale, hudScale, -hudScale, 1.0f, 0.0f );
     const ovrMatrix4f projectionMatrix = ovrMatrix4f_CreateProjectionFov(
             fov.angleLeft / vr.weapon_zoomLevel,
             fov.angleRight / vr.weapon_zoomLevel,
@@ -390,15 +394,12 @@ void VR_DrawFrame( engine_t* engine ) {
     engine->appState.LayerCount = 0;
     memset(engine->appState.Layers, 0, sizeof(ovrCompositorLayer_Union) * ovrMaxLayerCount);
 
-    re.SetVRHeadsetParms(projectionMatrix.M,
-                         engine->appState.Renderer.FrameBuffer[0].FrameBuffers[engine->appState.Renderer.FrameBuffer[0].TextureSwapChainIndex],
-                         engine->appState.Renderer.FrameBuffer[1].FrameBuffers[engine->appState.Renderer.FrameBuffer[1].TextureSwapChainIndex]);
-
     for (int eye = 0; eye < ovrMaxNumEyes; eye++)
     {
         ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer[eye];
         int swapchainIndex = frameBuffer->TextureSwapChainIndex;
         int glFramebuffer = frameBuffer->FrameBuffers[swapchainIndex];
+        re.SetVRHeadsetParms(projectionMatrix.M, monoVRMatrix.M, glFramebuffer);
 
         ovrFramebuffer_Acquire(frameBuffer);
         ovrFramebuffer_SetCurrent(frameBuffer);

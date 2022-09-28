@@ -125,8 +125,6 @@ vmCvar_t	cg_crosshairSize;
 vmCvar_t	cg_crosshairX;
 vmCvar_t	cg_crosshairY;
 vmCvar_t	cg_crosshairHealth;
-vmCvar_t	cg_draw2D;
-vmCvar_t	cg_drawStatus;
 vmCvar_t	cg_animSpeed;
 vmCvar_t	cg_debugAnim;
 vmCvar_t	cg_debugPosition;
@@ -232,8 +230,6 @@ static cvarTable_t cvarTable[] = {
 	{ &cg_playerShadow, "cg_playerShadow", "1", CVAR_ARCHIVE  },
 	{ &cg_gibs, "cg_gibs", "1", CVAR_ARCHIVE  },
 	{ &cg_megagibs, "cg_megagibs", "0", CVAR_ARCHIVE  },
-	{ &cg_draw2D, "cg_draw2D", "1", CVAR_ARCHIVE  },
-	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE  },
 	{ &cg_drawTimer, "cg_drawTimer", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPS, "cg_drawFPS", "0", CVAR_ARCHIVE  },
 	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE  },
@@ -1060,6 +1056,9 @@ static void CG_RegisterGraphics( void ) {
 	//Load from pakQ3Q
     cgs.media.reticleShader = trap_R_RegisterShader( "gfx/weapon/scope" );
     cgs.media.vignetteShader = trap_R_RegisterShader( "gfx/vignette" );
+
+    //HUD
+    cgs.media.hudShader = trap_R_RegisterShader( "sprites/vr/hud" );
 
 	//Used for the weapon selector
 	cgs.media.smallSphereModel = trap_R_RegisterModel("models/powerups/health/small_sphere.md3");

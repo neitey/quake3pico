@@ -279,35 +279,32 @@ bool ovrFramebuffer_Create(
     for (uint32_t i = 0; i < frameBuffer->TextureSwapChainLength; i++) {
         // Create the color buffer texture.
         const GLuint colorTexture = frameBuffer->ColorSwapChainImage[i].image;
-        GLenum colorTextureTarget = GL_TEXTURE_2D;
-        GL(glBindTexture(colorTextureTarget, colorTexture));
-        GL(glTexParameteri(colorTextureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-        GL(glTexParameteri(colorTextureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-        GL(glTexParameteri(colorTextureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-        GL(glTexParameteri(colorTextureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        GL(glBindTexture(colorTextureTarget, 0));
+
+        GLfloat borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
+        GLenum textureTarget = GL_TEXTURE_2D;
+        GL(glBindTexture(textureTarget, colorTexture));
+        GL(glTexParameterfv(textureTarget, GL_TEXTURE_BORDER_COLOR, borderColor));
+        GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+        GL(glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        GL(glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        GL(glBindTexture(textureTarget, 0));
 
         // Create depth buffer.
-        GL(glGenRenderbuffers(1, &frameBuffer->DepthBuffers[i]));
-        GL(glBindRenderbuffer(GL_RENDERBUFFER, frameBuffer->DepthBuffers[i]));
-        GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height));
-        GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+        GL(glGenTextures(1, &frameBuffer->DepthBuffers[i]));
+        GL(glBindTexture(textureTarget, frameBuffer->DepthBuffers[i]));
+        GL(glTexStorage2D(textureTarget, 1, GL_DEPTH_COMPONENT24, width, height));
+        GL(glBindTexture(textureTarget, 0));
 
         // Create the frame buffer.
         GL(glGenFramebuffers(1, &frameBuffer->FrameBuffers[i]));
         GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->FrameBuffers[i]));
-        GL(glFramebufferRenderbuffer(
-                GL_DRAW_FRAMEBUFFER,
-                GL_DEPTH_ATTACHMENT,
-                GL_RENDERBUFFER,
-                frameBuffer->DepthBuffers[i]));
-        GL(glFramebufferTexture2D(
-                GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0));
+        GL(glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureTarget, frameBuffer->DepthBuffers[i], 0));
+        GL(glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, colorTexture, 0));
         GL(GLenum renderFramebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
         GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
         if (renderFramebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
-            ALOGE(
-                    "Incomplete frame buffer object: %d", renderFramebufferStatus);
+            ALOGE("Incomplete frame buffer object: %d", renderFramebufferStatus);
             return false;
         }
     }

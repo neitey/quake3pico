@@ -315,7 +315,7 @@ void VR_Vibrate( int duration, int chan, float intensity )
             if (vibration_channel_duration[channel-1] == -1.0f && duration != 0.0f)
                 return;
 
-            vibration_channel_duration[channel-1] = duration;
+            vibration_channel_duration[channel-1] = duration * 0.1f;
             vibration_channel_intensity[channel-1] = intensity * vr_hapticIntensity->value;
         }
     }
@@ -526,14 +526,14 @@ static void IN_HandleInactiveInput(uint32_t * inputGroup, int inputFlag, char* i
 
 void VR_HapticEvent(const char* event, int position, int flags, int intensity, float angle, float yHeight )
 {
-    /*if (vr_hapticIntensity->value == 0.0f)
+    if (vr_hapticIntensity->value == 0.0f)
     {
         return;
     }
 
     engine_t* engine = VR_GetEngine();
-    jstring StringArg1 = (*(engine->java.Env))->NewStringUTF(engine->java.Env, event);
-    (*(engine->java.Env))->CallVoidMethod(engine->java.Env, engine->java.ActivityObject, android_haptic_event, StringArg1, position, flags, (int)(intensity * vr_hapticIntensity->value), angle, yHeight);
+    //jstring StringArg1 = (*(engine->java.Env))->NewStringUTF(engine->java.Env, event);
+    //(*(engine->java.Env))->CallVoidMethod(engine->java.Env, engine->java.ActivityObject, android_haptic_event, StringArg1, position, flags, (int)(intensity * vr_hapticIntensity->value), angle, yHeight);
 
     //Controller Haptic Support
     int weaponFireChannel = vr.weapon_stabilised ? 3 : (vr_righthanded->integer ? 2 : 1);
@@ -558,7 +558,7 @@ void VR_HapticEvent(const char* event, int position, int flags, int intensity, f
     else if (strcmp(event, "chainsaw_fire") == 0 ||
         strcmp(event, "RTCWQuest:fire_tesla") == 0)
     {
-        VR_Vibrate(500, weaponFireChannel, 1.0);
+        VR_Vibrate(500, weaponFireChannel, 0.5);
     }
     else if (strcmp(event, "machinegun_fire") == 0 || strcmp(event, "plasmagun_fire") == 0)
     {
@@ -579,7 +579,7 @@ void VR_HapticEvent(const char* event, int position, int flags, int intensity, f
     {
         //Quick blip
         VR_Vibrate(50, (vr_righthanded->integer ? 2 : 1), 1.0);
-    }*/
+    }
 }
 
 XrActionSuggestedBinding ActionSuggestedBinding(XrAction action, XrPath path) {
@@ -1068,6 +1068,8 @@ void InitializeActions() {
 
         bindings[currBinding++] = ActionSuggestedBinding(ThumbrestTouchAction, thumbrestPath[SIDE_LEFT]);
         bindings[currBinding++] = ActionSuggestedBinding(ThumbrestTouchAction, thumbrestPath[SIDE_RIGHT]);
+        bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_LEFT]);
+        bindings[currBinding++] = ActionSuggestedBinding(vibrateAction, hapticPath[SIDE_RIGHT]);
 
         bindings[currBinding++] = ActionSuggestedBinding(XTouchAction, XTouchPath[SIDE_LEFT]);
         bindings[currBinding++] = ActionSuggestedBinding(YTouchAction, YTouchPath[SIDE_LEFT]);
@@ -1597,13 +1599,8 @@ void IN_VRInputFrame( void )
 	}
 	engine_t* engine = VR_GetEngine();
 
-	if (vr_extralatencymode != NULL &&
-            vr_extralatencymode->integer) {
-        //TODO:vrapi_SetExtraLatencyMode(VR_GetEngine()->ovr, VRAPI_EXTRA_LATENCY_MODE_ON);
-    }
-
 	if (vr_refreshrate != NULL && vr_refreshrate->integer) {
-        //TODO:OXR(engine->appState.pfnRequestDisplayRefreshRate(engine->appState.Session, (float)vr_refreshrate->integer));
+		VR_setRefresh(vr_refreshrate->integer);
 	}
 
 	vr.virtual_screen = VR_useScreenLayer();
@@ -1611,7 +1608,7 @@ void IN_VRInputFrame( void )
     VR_processHaptics();
 
 	//trigger frame tick for haptics
-    //VR_HapticEvent("frame_tick", 0, 0, 0, 0, 0);
+    VR_HapticEvent("frame_tick", 0, 0, 0, 0, 0);
 
     //button mapping
     uint32_t lButtons = 0;

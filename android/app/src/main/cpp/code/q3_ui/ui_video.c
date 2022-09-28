@@ -255,7 +255,7 @@ GRAPHICS OPTIONS MENU
 #define ID_PLAYERSHADOW	115
 #define ID_GAMMA		116
 
-#define	NUM_REFRESHRATE	4
+#define	NUM_REFRESHRATE	2
 #define NUM_SHADOWS 3
 #define NUM_RAILGUN 2
 
@@ -813,15 +813,9 @@ static void GraphicsOptions_Event( void* ptr, int event ) {
 			int refresh;
 			switch (s_graphicsoptions.refreshrate.curvalue) {
 				case 0:
-					refresh = 60;
-					break;
-				case 1:
 					refresh = 72;
 					break;
-				case 2:
-					refresh = 80;
-					break;
-				case 3:
+				case 1:
 					refresh = 90;
 					break;
 				}
@@ -1055,17 +1049,11 @@ static void GraphicsOptions_SetMenuItems( void )
 
 	switch ( (int) trap_Cvar_VariableValue( "vr_refreshrate" ) )
 	{
-		case 60:
+		case 72:
 			s_graphicsoptions.refreshrate.curvalue = 0;
 			break;
-		case 72:
-			s_graphicsoptions.refreshrate.curvalue = 1;
-			break;
-		case 80:
-			s_graphicsoptions.refreshrate.curvalue = 2;
-			break;
 		case 90:
-			s_graphicsoptions.refreshrate.curvalue = 3;
+			s_graphicsoptions.refreshrate.curvalue = 1;
 			break;
 	}
 
@@ -1170,9 +1158,7 @@ void GraphicsOptions_MenuInit( void )
 */
 	static const char *s_refreshrate[] =
 	{
-		"60",
 		"72 (Recommended)",
-		"80",
 		"90",
 		NULL
 	};
@@ -1497,7 +1483,7 @@ void GraphicsOptions_MenuInit( void )
 //	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.allow_extensions );
 //	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.ratio );
 //	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.mode );
-//	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.refreshrate );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.refreshrate );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.railgun );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.gamma );
 //	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.colordepth );

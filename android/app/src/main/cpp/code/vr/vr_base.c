@@ -366,6 +366,8 @@ void VR_EnterVR( engine_t* engine, ovrJava java ) {
         exit(1);
     }
     pfnXrSetConfigPICO(engine->appState.Session, TRACKING_ORIGIN, "1");
+	pfnXrSetConfigPICO(VR_GetEngine()->appState.Session, ENABLE_SIX_DOF, "1");
+	pfnXrSetConfigPICO(VR_GetEngine()->appState.Session, OPENGL_NOERROR, "1");
 
     // Create a space to the first path
     XrReferenceSpaceCreateInfo spaceCreateInfo = {};
@@ -410,4 +412,12 @@ int VR_useScreenLayer( void )
 	return ( clc.state == CA_CINEMATIC ||
 			( keyCatcher & (KEYCATCH_UI | KEYCATCH_CONSOLE) ));
 }
+
+void VR_setRefresh( int value )
+{
+	char str[32];
+	sprintf(str, "%d", value);
+	pfnXrSetConfigPICO(VR_GetEngine()->appState.Session, SET_DISPLAY_RATE, str);
+}
+
 //#endif

@@ -14,6 +14,7 @@ void VR_LeaveVR( engine_t* engine );
 engine_t* VR_GetEngine( void );
 int VR_useScreenLayer( void );
 int VR_isPauseable( void );
+void VR_setRefresh( int value );
 
 float radians(float deg);
 

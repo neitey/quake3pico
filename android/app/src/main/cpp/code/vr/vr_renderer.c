@@ -276,7 +276,7 @@ void VR_ClearFrameBuffer( int width, int height)
     if (Cvar_VariableIntegerValue("vr_thirdPersonSpectator"))
     {
         //Blood red.. ish
-        glClearColor( 0.12f, 0.0f, 0.05f, 1.0f );
+        glClearColor( 0.03f, 0.0f, 0.01f, 1.0f );
     }
     else
     {

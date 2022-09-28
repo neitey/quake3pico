@@ -240,7 +240,7 @@ bool ovrFramebuffer_Create(
     memset(&swapChainCreateInfo, 0, sizeof(swapChainCreateInfo));
     swapChainCreateInfo.type = XR_TYPE_SWAPCHAIN_CREATE_INFO;
     swapChainCreateInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
-    swapChainCreateInfo.format = GL_RGBA8;
+    swapChainCreateInfo.format = GL_SRGB8_ALPHA8;
     swapChainCreateInfo.sampleCount = 1;
     swapChainCreateInfo.width = width;
     swapChainCreateInfo.height = height;

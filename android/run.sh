@@ -20,13 +20,13 @@ if [ "$1" == "release" ] || [ "$2" == "release" ] || [ "$3" == "release" ] || [ 
   TARGET=release
   GRADLE_BUILD_TYPE=:app:assembleRelease
   APK_NAME=app-release-unsigned.apk
+  APK_LOCATION="$SCRIPTDIR/app/build/outputs/apk/release"
 else
-  TARGET=debug
+  TARGET=release
   GRADLE_BUILD_TYPE=:app:assembleDebug
   APK_NAME=app-debug.apk
+  APK_LOCATION="$SCRIPTDIR/app/build/outputs/apk/debug"
 fi
-
-APK_LOCATION="$SCRIPTDIR/app/build/outputs/apk/$TARGET"
 
 if [ "$1" == "clean" ] || [ "$2" == "clean" ] || [ "$3" == "clean" ] || [ "$4" == "clean" ]; then
 	rm -rf $SCRIPTDIR/../build
@@ -59,22 +59,8 @@ if [ $? -ne 0 ]; then
 fi
 
 UNSIGNED_APK="$APK_LOCATION/$APK_NAME"
-if [ "$TARGET" == "release" ]; then
-  echo "Signing Release APK"
-  APK_NAME="$APP_NAME-release-$APP_VERSION.apk"
-  SIGNED_APK="$APK_LOCATION/$APK_NAME"
-  if [ -z "$KEYSTORE_PASS" ]; then
-    echo ""
-    echo "Keystore Password:"
-    read -s KEYSTORE_PASS
-  fi
-  apksigner="$ANDROID_SDK_ROOT/build-tools/$ANDROID_TOOLS_VERSION/apksigner"
-  $apksigner sign --ks "$KEYSTORE" --out "$SIGNED_APK" --v2-signing-enabled true --ks-pass "pass:$KEYSTORE_PASS" "$UNSIGNED_APK"
-  rm "$UNSIGNED_APK"
-else
-  APK_NAME="$APP_NAME-debug-$APP_VERSION.apk"
-  mv "$UNSIGNED_APK" "$APK_LOCATION/$APK_NAME"
-fi
+APK_NAME="$APP_NAME-debug-$APP_VERSION.apk"
+mv "$UNSIGNED_APK" "$APK_LOCATION/$APK_NAME"
 
 if [ "$1" == "install" ] || [ "$2" == "install" ] || [ "$3" == "install" ] || [ "$4" == "install" ]; then
   adb install -r "$APK_LOCATION/$APK_NAME"
@@ -87,24 +73,6 @@ if [ "$1" == "install" ] || [ "$2" == "install" ] || [ "$3" == "install" ] || [ 
     fi
   fi
 fi
-
-#ANDROID_STORAGE_LOCATION=/sdcard/Android/data/$APP_PACKAGE/files/
-#adb shell mkdir -p $ANDROID_STORAGE_LOCATION
-#adb push --sync ~/.local/share/Steam/steamapps/common/Quake\ 3\ Arena/baseq3 $ANDROID_STORAGE_LOCATION
-#if [ $? -ne 0 ]; then
-#	echo "Failed to transfer files."
-#	exit 1
-#fi
-#adb push --sync ../code/renderergl2/glsl $ANDROID_STORAGE_LOCATION/baseq3/
-#if [ $? -ne 0 ]; then
-#	echo "Failed to transfer shaders."
-#	exit 1
-#fi
-#adb push --sync autoexec.cfg $ANDROID_STORAGE_LOCATION/baseq3/
-#if [ $? -ne 0 ]; then
-#	echo "Failed to transfer autoexec."
-#	exit 1
-#fi
 
 if [ "$1" == "start" ] || [ "$2" == "start" ] || [ "$3" == "start" ] || [ "$4" == "start" ]; then
   adb logcat -c

@@ -10,7 +10,7 @@ add_library(main SHARED main.c)
 SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Configs" FORCE)
 SET(BUILD_FOLDER release-android-aarch64)
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
-	SET(BUILD_FOLDER debug-android-aarch64)
+#	SET(BUILD_FOLDER debug-android-aarch64)
 endif()
 add_custom_target(copy_libs
 	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/../../../../../build/${BUILD_FOLDER}/libioquake3_opengl2.so ${CMAKE_SOURCE_DIR}/../jniLibs/arm64-v8a/libioquake3_opengl2.so

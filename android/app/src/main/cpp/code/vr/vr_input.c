@@ -1112,12 +1112,6 @@ void InitializeActions() {
     CHECK_XRCMD(xrAttachSessionActionSets(engine->appState.Session, &attachInfo));
 }
 
-void IN_VRInit( void )
-{
-    ResetInput();
-    inputInitialized = qfalse;
-}
-
 static void IN_VRController( qboolean isRightController, XrPosef pose )
 {
     //Set gun angles - We need to calculate all those we might need (including adjustments) for the client to then take its pick
@@ -1648,6 +1642,7 @@ void IN_VRSyncActions( void )
 {
     if (!inputInitialized)
     {
+        ResetInput();
         InitializeActions();
         inputInitialized = qtrue;
     }

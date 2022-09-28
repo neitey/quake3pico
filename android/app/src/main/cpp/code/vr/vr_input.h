@@ -7,7 +7,6 @@
 #if __ANDROID__
 
 void IN_VRInputFrame( void );
-void IN_VRInit( void );
 void IN_VRSyncActions( void );
 void IN_VRUpdateHMD( XrPosef xfStageFromHead );
 void IN_VRUpdateControllers( float predictedDisplayTime );

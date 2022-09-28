@@ -1354,14 +1354,8 @@ static void IN_VRJoystick( qboolean isRightController, float joystickX, float jo
 			vec2_t joystick;
             if ( vr.use_fake_6dof )
             {
-                //multiplayer game
-                if (!vr_directionMode->integer) {
-					//HMD Based
-					rotateAboutOrigin(joystickX, joystickY, vr.hmdorientation[YAW], joystick);
-				} else {
-                	//Off-hand based
-					rotateAboutOrigin(joystickX, joystickY, vr.offhandangles2[YAW], joystick);
-				}
+                //HMD Based movement
+                rotateAboutOrigin(joystickX, joystickY, vr.hmdorientation[YAW] - vr.weaponangles[YAW], joystick);
             }
             else
             {
@@ -1372,14 +1366,9 @@ static void IN_VRJoystick( qboolean isRightController, float joystickX, float jo
 				rotateAboutOrigin(-vr.hmdposition_delta[0] * factor,
 								  vr.hmdposition_delta[2] * factor, -vr.hmdorientation[YAW], positional);
 
-				if (!vr_directionMode->integer) {
-					//HMD Based
-					joystick[0] = joystickX;
-					joystick[1] = joystickY;
-				} else {
-					//Off-hand based
-					rotateAboutOrigin(joystickX, joystickY, vr.offhandangles2[YAW] - vr.hmdorientation[YAW], joystick);
-				}
+                //HMD Based movement
+                joystick[0] = joystickX;
+                joystick[1] = joystickY;
             }
 
             //sideways

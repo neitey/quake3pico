@@ -628,11 +628,6 @@ void CL_FinishMove( usercmd_t *cmd ) {
 		for (i = 0; i < 3; i++) {
 			cmd->angles[i] = ANGLE2SHORT(angles[i]);
 		}
-
-		vec3_t out;
-		rotateAboutOrigin(cmd->rightmove, cmd->forwardmove, -vr.calculated_weaponangles[YAW], out);
-		cmd->rightmove = out[0];
-		cmd->forwardmove = out[1];
 	}
 	else {
 		for (i = 0; i < 3; i++) {

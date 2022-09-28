@@ -18,7 +18,6 @@ Copyright : Copyright (c) Facebook Technologies, LLC and its affiliates. All rig
 #include <sys/prctl.h>
 #include <assert.h>
 
-//cmc ext function ,not use from 2021/07
 typedef XrResult (XRAPI_PTR *PFN_xrSetEngineVersionPico)(XrInstance instance,const char* version);
 typedef XrResult (XRAPI_PTR *PFN_xrStartCVControllerThreadPico)(XrInstance instance,int headSensorState, int handSensorState);
 typedef XrResult (XRAPI_PTR *PFN_xrStopCVControllerThreadPico)(XrInstance instance,int headSensorState, int handSensorState);
@@ -58,6 +57,14 @@ int Pxr_StopCVControllerThread(int headSensorState, int handSensorState) {
         return -1;
     }
 }
+
+typedef void(GL_APIENTRY* PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC)(
+        GLenum target,
+        GLenum attachment,
+        GLuint texture,
+        GLint level,
+        GLint baseViewIndex,
+        GLsizei numViews);
 
 /*
 ================================================================================
@@ -236,6 +243,10 @@ bool ovrFramebuffer_Create(
     frameBuffer->Width = width;
     frameBuffer->Height = height;
 
+    PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC glFramebufferTextureMultiviewOVR =
+            (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC)eglGetProcAddress(
+                    "glFramebufferTextureMultiviewOVR");
+
     XrSwapchainCreateInfo swapChainCreateInfo;
     memset(&swapChainCreateInfo, 0, sizeof(swapChainCreateInfo));
     swapChainCreateInfo.type = XR_TYPE_SWAPCHAIN_CREATE_INFO;
@@ -245,7 +256,7 @@ bool ovrFramebuffer_Create(
     swapChainCreateInfo.width = width;
     swapChainCreateInfo.height = height;
     swapChainCreateInfo.faceCount = 1;
-    swapChainCreateInfo.arraySize = 1;
+    swapChainCreateInfo.arraySize = 2;
     swapChainCreateInfo.mipCount = 1;
 
     frameBuffer->ColorSwapChain.Width = swapChainCreateInfo.width;
@@ -281,9 +292,9 @@ bool ovrFramebuffer_Create(
         const GLuint colorTexture = frameBuffer->ColorSwapChainImage[i].image;
 
         GLfloat borderColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
-        GLenum textureTarget = GL_TEXTURE_2D;
+        GLenum textureTarget = GL_TEXTURE_2D_ARRAY;
         GL(glBindTexture(textureTarget, colorTexture));
-        GL(glTexParameterfv(textureTarget, GL_TEXTURE_BORDER_COLOR, borderColor));
+        GL(glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor));
         GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GL(glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
         GL(glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
@@ -293,14 +304,14 @@ bool ovrFramebuffer_Create(
         // Create depth buffer.
         GL(glGenTextures(1, &frameBuffer->DepthBuffers[i]));
         GL(glBindTexture(textureTarget, frameBuffer->DepthBuffers[i]));
-        GL(glTexStorage2D(textureTarget, 1, GL_DEPTH_COMPONENT24, width, height));
+        GL(glTexStorage3D(textureTarget, 1, GL_DEPTH_COMPONENT24, width, height, 2));
         GL(glBindTexture(textureTarget, 0));
 
         // Create the frame buffer.
         GL(glGenFramebuffers(1, &frameBuffer->FrameBuffers[i]));
         GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->FrameBuffers[i]));
-        GL(glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureTarget, frameBuffer->DepthBuffers[i], 0));
-        GL(glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, colorTexture, 0));
+        GL(glFramebufferTextureMultiviewOVR(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, frameBuffer->DepthBuffers[i], 0, 0, 2));
+        GL(glFramebufferTextureMultiviewOVR(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTexture, 0, 0, 2));
         GL(GLenum renderFramebufferStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
         GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
         if (renderFramebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
@@ -375,9 +386,7 @@ ovrRenderer
 */
 
 void ovrRenderer_Clear(ovrRenderer* renderer) {
-    for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
-        ovrFramebuffer_Clear(&renderer->FrameBuffer[eye]);
-    }
+    ovrFramebuffer_Clear(&renderer->FrameBuffer);
 }
 
 void ovrRenderer_Create(
@@ -386,19 +395,15 @@ void ovrRenderer_Create(
         int suggestedEyeTextureWidth,
         int suggestedEyeTextureHeight) {
     // Create the frame buffers.
-    for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
-        ovrFramebuffer_Create(
-                session,
-                &renderer->FrameBuffer[eye],
-                suggestedEyeTextureWidth,
-                suggestedEyeTextureHeight);
-    }
+    ovrFramebuffer_Create(
+            session,
+            &renderer->FrameBuffer,
+            suggestedEyeTextureWidth,
+            suggestedEyeTextureHeight);
 }
 
 void ovrRenderer_Destroy(ovrRenderer* renderer) {
-    for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
-        ovrFramebuffer_Destroy(&renderer->FrameBuffer[eye]);
-    }
+    ovrFramebuffer_Destroy(&renderer->FrameBuffer);
 }
 
 /*

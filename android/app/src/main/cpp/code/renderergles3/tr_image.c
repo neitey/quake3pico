@@ -2894,6 +2894,7 @@ void R_SetColorMappings( void ) {
 	}
 
 	g = 1.0f + (r_gamma->value - 1.0) * 2.0f;
+	g += 0.4f; //multiview adjust
 
 	for ( i = 0; i < 256; i++ ) {
 		if ( g == 1 ) {

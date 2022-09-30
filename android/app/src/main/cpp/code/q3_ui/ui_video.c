@@ -813,7 +813,7 @@ void GraphicsOptions_MenuInit( void )
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.sound );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.network );
 
-	//Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.refreshrate );
+	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.refreshrate );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.railgun );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.gamma );
 	Menu_AddItem( &s_graphicsoptions.menu, ( void * ) &s_graphicsoptions.lighting );

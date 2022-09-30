@@ -200,7 +200,6 @@ void VR_Recenter(engine_t* engine) {
 
     if (stageSupported) {
         spaceCreateInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_STAGE;
-        spaceCreateInfo.poseInReferenceSpace.position.y = 1.6750f;
         OXR(xrCreateReferenceSpace(engine->appState.Session, &spaceCreateInfo, &engine->appState.StageSpace));
         ALOGV("Created stage space");
         engine->appState.CurrentSpace = engine->appState.StageSpace;

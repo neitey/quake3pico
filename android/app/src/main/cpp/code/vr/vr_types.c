@@ -18,6 +18,18 @@ Copyright : Copyright (c) Facebook Technologies, LLC and its affiliates. All rig
 #include <sys/prctl.h>
 #include <assert.h>
 
+enum XrColorSpace{
+	colorSpaceLinear = 0,
+	colorSpaceSRGB = 1,
+};
+
+typedef struct XrSessionBeginInfoEXT {
+	XrStructureType             type;
+	const void* XR_MAY_ALIAS    next;
+	uint32_t                    enableSinglePass;
+	enum XrColorSpace                colorSpace;
+} XrSessionBeginInfoEXT;
+
 typedef XrResult (XRAPI_PTR *PFN_xrSetEngineVersionPico)(XrInstance instance,const char* version);
 typedef XrResult (XRAPI_PTR *PFN_xrStartCVControllerThreadPico)(XrInstance instance,int headSensorState, int handSensorState);
 typedef XrResult (XRAPI_PTR *PFN_xrStopCVControllerThreadPico)(XrInstance instance,int headSensorState, int handSensorState);
@@ -445,10 +457,15 @@ void ovrApp_HandleSessionStateChanges(ovrApp* app, XrSessionState state) {
     if (state == XR_SESSION_STATE_READY) {
         assert(app->SessionActive == false);
 
+	    XrSessionBeginInfoEXT sessionBeginInfoEXT;
+	    sessionBeginInfoEXT.type = XR_TYPE_SESSION_BEGIN_INFO;
+	    sessionBeginInfoEXT.next = NULL;
+	    sessionBeginInfoEXT.enableSinglePass = 1;
+
         XrSessionBeginInfo sessionBeginInfo;
         memset(&sessionBeginInfo, 0, sizeof(sessionBeginInfo));
         sessionBeginInfo.type = XR_TYPE_SESSION_BEGIN_INFO;
-        sessionBeginInfo.next = NULL;
+        sessionBeginInfo.next = (void *)&sessionBeginInfoEXT;
         sessionBeginInfo.primaryViewConfigurationType = app->ViewportConfig.viewConfigurationType;
 
         XrResult result;

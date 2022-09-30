@@ -171,7 +171,7 @@ static void PlayerSettings_DrawName( void *self ) {
 	Q_strncpyz( name, f->field.buffer, sizeof(name) );
 	Q_CleanStr( name );
 	UI_DrawProportionalString( 320, 430, name, UI_CENTER|UI_BIGFONT, text_color_normal );
-	UI_DrawString( 320, 460, "To change player name use the companion app.", UI_CENTER|UI_SMALLFONT, text_color_normal );
+	//UI_DrawString( 320, 460, "To change player name use the companion app.", UI_CENTER|UI_SMALLFONT, text_color_normal );
 }
 
 

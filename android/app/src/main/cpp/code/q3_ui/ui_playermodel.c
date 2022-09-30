@@ -378,8 +378,7 @@ static void PlayerModel_DrawPlayer( void *self )
 	}
 
 	UI_DrawPlayer( b->generic.x, b->generic.y, b->width, b->height, &s_playermodel.playerinfo, uis.realtime/2 );
-
-	UI_DrawString( 320, 460, "To change player name use the companion app.", UI_CENTER|UI_SMALLFONT, text_color_normal );
+	//UI_DrawString( 320, 460, "To change player name use the companion app.", UI_CENTER|UI_SMALLFONT, text_color_normal );
 }
 
 /*

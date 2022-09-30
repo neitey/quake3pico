@@ -365,7 +365,7 @@ void VR_EnterVR( engine_t* engine, ovrJava java ) {
         ALOGE("Failed to create XR session: %d.", initResult);
         exit(1);
     }
-    pfnXrSetConfigPICO(engine->appState.Session, TRACKING_ORIGIN, "0");
+    pfnXrSetConfigPICO(engine->appState.Session, TRACKING_ORIGIN, "1");
 	pfnXrSetConfigPICO(VR_GetEngine()->appState.Session, ENABLE_SIX_DOF, "1");
 	pfnXrSetConfigPICO(VR_GetEngine()->appState.Session, OPENGL_NOERROR, "1");
 

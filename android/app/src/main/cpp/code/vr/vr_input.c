@@ -68,6 +68,7 @@ XrSpace aimSpace[SIDE_COUNT];
 XrPath handSubactionPath[SIDE_COUNT];
 XrSpace handSpace[SIDE_COUNT];
 
+float heightAdjust = 0.0f;
 qboolean inputInitialized = qfalse;
 
 void ResetInput()
@@ -1127,7 +1128,7 @@ static void IN_VRController( qboolean isRightController, XrPosef pose )
 
         ///Weapon location relative to view
         vr.weaponposition[0] = pose.position.x;
-        vr.weaponposition[1] = pose.position.y + vr_heightAdjust->value;
+        vr.weaponposition[1] = pose.position.y + heightAdjust;
         vr.weaponposition[2] = pose.position.z;
 
         VectorCopy(vr.weaponoffset_last[1], vr.weaponoffset_last[0]);
@@ -1140,7 +1141,7 @@ static void IN_VRController( qboolean isRightController, XrPosef pose )
 
         ///location relative to view
         vr.offhandposition[0] = pose.position.x;
-        vr.offhandposition[1] = pose.position.y + vr_heightAdjust->value;
+        vr.offhandposition[1] = pose.position.y + heightAdjust;
         vr.offhandposition[2] = pose.position.z;
 
         VectorCopy(vr.offhandoffset_last[1], vr.offhandoffset_last[0]);
@@ -1678,7 +1679,8 @@ void IN_VRUpdateHMD( XrPosef xfStageFromHead )
     const XrVector3f positionHmd = xfStageFromHead.position;
     vec3_t rotation = {0, 0, 0};
     QuatToYawPitchRoll(quatHmd, rotation, vr.hmdorientation);
-    VectorSet(vr.hmdposition, positionHmd.x, positionHmd.y + vr_heightAdjust->value, positionHmd.z);
+    heightAdjust = positionHmd.y < 1 ? vr_heightAdjust->value : vr_heightAdjust->value - 1.5f;
+    VectorSet(vr.hmdposition, positionHmd.x, positionHmd.y + heightAdjust, positionHmd.z);
 
     //Position
     VectorSubtract(vr.hmdposition_last, vr.hmdposition, vr.hmdposition_delta);

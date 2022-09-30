@@ -239,7 +239,7 @@ static void Main_MenuDraw( void ) {
 	}
 
 	yPos += SMALLCHAR_HEIGHT;
-	UI_DrawString( 320, yPos, "Quake3Quest " Q3QVERSION " - Visit quake3.quakevr.com for discord invite.", UI_CENTER|UI_SMALLFONT, color_white );
+	UI_DrawString( 320, yPos, "Quake3VR " Q3QVERSION " - Visit quake3.quakevr.com for discord invite.", UI_CENTER|UI_SMALLFONT, color_white );
 	yPos += SMALLCHAR_HEIGHT;
 	UI_DrawString( 320, yPos, "Join our discord for news, leaderboards and community!", UI_CENTER|UI_SMALLFONT, color_white );
 	yPos += SMALLCHAR_HEIGHT;

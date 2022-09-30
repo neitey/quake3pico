@@ -2893,7 +2893,7 @@ void R_SetColorMappings( void ) {
 		ri.Cvar_Set( "r_gamma", "3.0" );
 	}
 
-	g = r_gamma->value;
+	g = 1.0f + (r_gamma->value - 1.0) * 2.0f;
 
 	for ( i = 0; i < 256; i++ ) {
 		if ( g == 1 ) {

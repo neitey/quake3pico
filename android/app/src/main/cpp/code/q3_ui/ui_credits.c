@@ -95,8 +95,8 @@ static void UI_CreditMenu_Draw_q3q( void ) {
 	int		i;
 
 /*
-Quake3Quest by Team Beef & Friends
--------------------------------------
+Quake3VR by Team Beef & Friends
+-------------------------------
 Lead programmer
 Dr Beef
 
@@ -116,7 +116,7 @@ Special Thanks to the whole discord!
 
 	y = 12;
 
-	UI_DrawProportionalString( 320, y, "Quake3Quest by Team Beef & Friends", UI_CENTER|UI_SMALLFONT, color_red );
+	UI_DrawProportionalString( 320, y, "Quake3VR by Team Beef & Friends", UI_CENTER|UI_SMALLFONT, color_red );
 	y += PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
 	UI_DrawProportionalString( 320, y, "----------------------------------", UI_CENTER|UI_SMALLFONT, color_white );
 
@@ -127,22 +127,20 @@ Special Thanks to the whole discord!
 	y += PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
     UI_DrawString( 320, y, "DrBeef", UI_CENTER|UI_SMALLFONT, color_white );
 
-    y += 1.42 * PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
-    UI_DrawProportionalString( 320, y, "Companion App      Custom Quest Home", UI_CENTER|UI_SMALLFONT, color_red );
-    y += PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
-    UI_DrawString( 320, y, "Baggyg                     ROBYER1", UI_CENTER|UI_SMALLFONT, color_white );
+	y += 1.42 * PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
+	UI_DrawProportionalString( 320, y, "Pico headset porting", UI_CENTER|UI_SMALLFONT, color_red );
+	y += PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
+	UI_DrawString( 320, y, "Lubos", UI_CENTER|UI_SMALLFONT, color_white );
 
 	y += 1.42 * PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
-	UI_DrawProportionalString( 320, y, "Additional Quake3Quest coding", UI_CENTER|UI_SMALLFONT, color_red );
+	UI_DrawProportionalString( 320, y, "Additional Quake3VR coding", UI_CENTER|UI_SMALLFONT, color_red );
 	y += PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
     UI_DrawString( 320, y, "Sparkie, MuadDib, Lubos, Baggyg", UI_CENTER|UI_SMALLFONT, color_white );
 
 	y += 1.42 * PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
 	UI_DrawProportionalString( 320, y, "Additional Contributions", UI_CENTER|UI_SMALLFONT, color_red );
 	y += PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
-	UI_DrawString( 320, y, "Bummser, Skillfur, Ceno, Cukier, Eispfogel", UI_CENTER|UI_SMALLFONT, color_white );
-	y += PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
-	UI_DrawString( 320, y, "Omarlego (custom Q3Q background), Pizzaluigi", UI_CENTER|UI_SMALLFONT, color_white );
+	UI_DrawString( 320, y, "Bummser, Skillfur, Ceno, Cukier, Eispfogel, Omarlego, Pizzaluigi", UI_CENTER|UI_SMALLFONT, color_white );
 
 	y += 1.42 * PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
 	UI_DrawProportionalString( 320, y, "Dedicated Beta Testers", UI_CENTER|UI_SMALLFONT, color_red );
@@ -165,7 +163,7 @@ Special Thanks to the whole discord!
 		UI_DrawProportionalString(320, y, "original ioquake3 contributors!", UI_CENTER | UI_SMALLFONT, color_orange);
 	}
 
-	UI_DrawString( 320, 459, "Quake3Quest: https://quake3.quakevr.com/", UI_CENTER|UI_SMALLFONT, color_red );
+	UI_DrawString( 320, 459, "Quake3VR: https://quake3.quakevr.com/", UI_CENTER|UI_SMALLFONT, color_red );
 }
 
 

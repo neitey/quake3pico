@@ -1,5 +1,7 @@
 package com.drbeef.ioq3quest;
 
+import static android.system.Os.setenv;
+
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,38 +19,26 @@ import com.drbeef.externalhapticsservice.HapticsConstants;
 
 import org.libsdl.app.SDLActivity;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Vector;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
-import static android.system.Os.setenv;
-
-public class MainActivity extends SDLActivity // implements KeyEvent.Callback
+public class MainActivity extends SDLActivity
 {
-	private int permissionCount = 0;
 	private static final int READ_EXTERNAL_STORAGE_PERMISSION_ID = 1;
 	private static final int WRITE_EXTERNAL_STORAGE_PERMISSION_ID = 2;
-	private static final String TAG = "ioquake3Quest";
+	private static final String TAG = "ioquake3";
 
 	private boolean hapticsEnabled = false;
 
-	String commandLineParams;
-
-	private Vector<HapticServiceClient> externalHapticsServiceClients = new Vector<>();
+	private final Vector<HapticServiceClient> externalHapticsServiceClients = new Vector<>();
 
 	//Use a vector of pairs, it is possible a given package _could_ in the future support more than one haptic service
 	//so a map here of Package -> Action would not work.
-	private static Vector<Pair<String, String>> externalHapticsServiceDetails = new Vector<>();
+	private static final Vector<Pair<String, String>> externalHapticsServiceDetails = new Vector<>();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -108,63 +98,45 @@ public class MainActivity extends SDLActivity // implements KeyEvent.Callback
 	}
 
 	public void create() throws IOException {
+		File root = new File("/sdcard/ioquake3/");
+		File baseq3 = new File(root, "baseq3");
+		File baseoa = new File(root, "baseoa");
+		File missionpack = new File(root, "missionpack");
+
 		// Prepare base game directory
-		new File("/sdcard/ioquake3Quest/baseq3").mkdirs();
+		baseq3.mkdirs();
 
 		// Copy the command line params file and autoexec
-		copy_asset("/sdcard/ioquake3Quest", "commandline.txt", false);
-		copy_asset("/sdcard/ioquake3Quest/baseq3", "autoexec.cfg", false);
+		copy_asset(baseq3.getAbsolutePath(), "autoexec.cfg", false);
 		// Copy our special pak file and demo
-		copy_asset("/sdcard/ioquake3Quest/baseq3", "pakQ3Q.pk3", true);
-		copy_asset("/sdcard/ioquake3Quest/baseq3", "pak0.pk3", false);
+		copy_asset(baseq3.getAbsolutePath(), "pakQ3Q.pk3", true);
+		copy_asset(baseq3.getAbsolutePath(), "pak0.pk3", false);
 		//Copy Omarlego's excellent replacement background
-		copy_asset("/sdcard/ioquake3Quest/baseq3", "z_custom_background66.pk3", false);
+		copy_asset(baseq3.getAbsolutePath(), "z_custom_background66.pk3", false);
 		// Cleanup incompatible shaders
-		delete_asset("/sdcard/ioquake3Quest/baseq3/glsl");
+		delete_asset(new File(baseq3, "glsl"));
 
 		// If Team Arena is installed then copy necessary stuff
-		if (new File("/sdcard/ioquake3Quest/missionpack").exists()) {
-			copy_asset("/sdcard/ioquake3Quest/missionpack", "autoexec.cfg", false);
-			copy_asset("/sdcard/ioquake3Quest/missionpack", "pakQ3Q.pk3", true);
-			delete_asset("/sdcard/ioquake3Quest/missionpack/glsl");
+		if (missionpack.exists()) {
+			copy_asset(missionpack.getAbsolutePath(), "autoexec.cfg", false);
+			copy_asset(missionpack.getAbsolutePath(), "pakQ3Q.pk3", true);
+			delete_asset(new File(missionpack, "glsl"));
 		}
 
 		// If Open Arena is installed then copy necessary stuff
-		if (new File("/sdcard/ioquake3Quest/baseoa").exists()) {
-			copy_asset("/sdcard/ioquake3Quest/baseoa", "autoexec_oa.cfg", "autoexec.cfg", false);
-			copy_asset("/sdcard/ioquake3Quest/baseoa", "pakQ3Q.pk3", true);
-			delete_asset("/sdcard/ioquake3Quest/baseoa/glsl");
-		}
-
-		//Read these from a file and pass through
-		commandLineParams = new String();
-
-		//See if user is trying to use command line params
-		if (new File("/sdcard/ioquake3Quest/commandline.txt").exists()) {
-			BufferedReader br;
-			try {
-				br = new BufferedReader(new FileReader("/sdcard/ioquake3Quest/commandline.txt"));
-				String s;
-				StringBuilder sb = new StringBuilder(0);
-				while ((s = br.readLine()) != null)
-					sb.append(s + " ");
-				br.close();
-
-				commandLineParams = new String(sb.toString());
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		if (baseoa.exists()) {
+			copy_asset(baseoa.getAbsolutePath(), "autoexec_oa.cfg", "autoexec.cfg", false);
+			copy_asset(baseoa.getAbsolutePath(), "pakQ3Q.pk3", true);
+			delete_asset(new File(baseq3, "glsl"));
 		}
 
 		Log.d(TAG, "setting env");
 		try {
-			//commandLineParams += " +map q3dm7";
-			setenv("commandline", commandLineParams, true);
+			String cmd = "+set fs_basepath /sdcard/ioquake3/ +set fs_game baseq3 +set fs_basegame baseq3";
+			//cmd += " +map q3dm7";
+			setenv("commandline", cmd, true);
 		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
 		for (Pair<String, String> serviceDetail : externalHapticsServiceDetails) {

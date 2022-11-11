@@ -498,6 +498,7 @@ GLboolean ovrApp_HandleXrEvents(ovrApp* app) {
         switch (baseEventHeader->type) {
             case XR_TYPE_EVENT_DATA_EVENTS_LOST:
                 ALOGV("xrPollEvent: received XR_TYPE_EVENT_DATA_EVENTS_LOST event");
+                recenter = GL_TRUE;
                 break;
             case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING: {
                 const XrEventDataInstanceLossPending* instance_loss_pending_event =

@@ -73,7 +73,7 @@ static comfort_t s_comfort;
 
 static void Comfort_SetMenuItems( void ) {
     s_comfort.comfortvignette.curvalue		= trap_Cvar_VariableValue( "vr_comfortVignette" );
-    s_comfort.heightadjust.curvalue		= trap_Cvar_VariableValue( "vr_heightAdjust" );
+    s_comfort.heightadjust.curvalue		= trap_Cvar_VariableValue( "vr_heightAdjustPico" );
     s_comfort.rollhit.curvalue		    = trap_Cvar_VariableValue( "vr_rollWhenHit" ) != 0;
 	s_comfort.hapticintensity.curvalue		= trap_Cvar_VariableValue( "vr_hapticIntensity" );
 	s_comfort.huddepth.curvalue		= (int)trap_Cvar_VariableValue( "vr_hudDepth" ) % NUM_HUDDEPTH;
@@ -92,7 +92,7 @@ static void Comfort_MenuEvent( void* ptr, int notification ) {
         break;
 
     case ID_HEIGHTADJUST:
-        trap_Cvar_SetValue( "vr_heightAdjust", s_comfort.heightadjust.curvalue );
+        trap_Cvar_SetValue( "vr_heightAdjustPico", s_comfort.heightadjust.curvalue );
         break;
 
     case ID_ROLLHIT:

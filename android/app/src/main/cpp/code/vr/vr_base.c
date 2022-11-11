@@ -203,7 +203,7 @@ void VR_InitCvars( void )
 	vr_extralatencymode = Cvar_Get ("vr_extralatencymode", "1", CVAR_ARCHIVE);
 	vr_directionMode = Cvar_Get ("vr_directionMode", "0", CVAR_ARCHIVE); // 0 = HMD, 1 = Off-hand
 	vr_weaponPitch = Cvar_Get ("vr_weaponPitch", "-20", CVAR_ARCHIVE);
-	vr_heightAdjust = Cvar_Get ("vr_heightAdjust", "1.5", CVAR_ARCHIVE);
+	vr_heightAdjust = Cvar_Get ("vr_heightAdjustPico", "1.5", CVAR_ARCHIVE);
     vr_twoHandedWeapons = Cvar_Get ("vr_twoHandedWeapons", "1", CVAR_ARCHIVE);
     vr_showItemInHand = Cvar_Get ("vr_showItemInHand", "1", CVAR_ARCHIVE);
 	vr_refreshrate = Cvar_Get ("vr_refreshrate", "72", CVAR_ARCHIVE);

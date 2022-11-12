@@ -86,12 +86,12 @@ int main(int argc, char* argv[]) {
 		if (hasFocus != g_HasFocus) {
 			hasFocus = g_HasFocus;
 			if (!hasFocus && VR_isPauseable()) {
-				Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_ESCAPE, qtrue, 0, NULL );
+				//Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_ESCAPE, qtrue, 0, NULL );
 				//Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_CONSOLE, qtrue, 0, NULL );
 				paused = qtrue;
 			} else if (hasFocus && paused) {
 				//Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_CONSOLE, qtrue, 0, NULL );
-				Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_ESCAPE, qtrue, 0, NULL );
+				//Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_ESCAPE, qtrue, 0, NULL );
 				paused = qfalse;
 			}
 		}

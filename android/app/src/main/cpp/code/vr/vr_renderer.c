@@ -464,7 +464,7 @@ void VR_DrawFrame( engine_t* engine ) {
         const XrVector3f axis = {0.0f, 1.0f, 0.0f};
         XrVector3f pos = {
                 invViewTransform[0].position.x - sin(radians(vr.menuYaw)) * 6.0f,
-                invViewTransform[0].position.y,
+                -0.25f,
                 invViewTransform[0].position.z - cos(radians(vr.menuYaw)) * 6.0f
         };
         cylinder_layer.pose.orientation = XrQuaternionf_CreateFromVectorAngle(axis, radians(vr.menuYaw));

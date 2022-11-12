@@ -316,7 +316,7 @@ void VR_Vibrate( int duration, int chan, float intensity )
             if (vibration_channel_duration[channel-1] == -1.0f && duration != 0.0f)
                 return;
 
-            vibration_channel_duration[channel-1] = duration * 0.1f;
+            vibration_channel_duration[channel-1] = duration;
             vibration_channel_intensity[channel-1] = intensity * vr_hapticIntensity->value;
         }
     }

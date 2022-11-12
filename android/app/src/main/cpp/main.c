@@ -95,22 +95,6 @@ int main(int argc, char* argv[]) {
 				paused = qfalse;
 			}
 		}
-
-		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-			LOGI("Received SDL Event: %d", event.type);
-			switch (event.type)
-			{
-				case SDL_WINDOWEVENT_FOCUS_GAINED:
-					VR_EnterVR(engine, engine_get_ovrJava());
-					break;
-
-				case SDL_WINDOWEVENT_FOCUS_LOST:
-					VR_LeaveVR(engine);
-					break;
-			}
-		}
-
 		VR_DrawFrame(engine);
 	}
 

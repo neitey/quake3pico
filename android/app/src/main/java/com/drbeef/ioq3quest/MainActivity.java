@@ -51,6 +51,21 @@ public class MainActivity extends SDLActivity
 
 	}
 
+	@Override
+	protected void onPause() {
+		super.onPause();
+		nativeFocusChanged(false);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		nativeFocusChanged(true);
+	}
+
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {}
+
 	@Override protected void onDestroy()
 	{
 		Log.i(TAG, "onDestroy called");
@@ -90,11 +105,6 @@ public class MainActivity extends SDLActivity
 			} catch (Exception e) {
 			}
 		}
-	}
-
-	@Override
-	public void onWindowFocusChanged(boolean hasFocus) {
-		nativeFocusChanged(hasFocus);
 	}
 
 	public void create() throws IOException {

@@ -48,23 +48,10 @@ public class MainActivity extends SDLActivity
 		} catch (Exception e) {
 		}
 		super.onCreate(savedInstanceState);
-
 	}
 
 	@Override
-	protected void onPause() {
-		super.onPause();
-		nativeFocusChanged(false);
-	}
-
-	@Override
-	protected void onResume() {
-		super.onResume();
-		nativeFocusChanged(true);
-	}
-
-	@Override
-	public void onWindowFocusChanged(boolean hasFocus) {}
+	public void onWindowFocusChanged(boolean hasFocus) { nativeFocusChanged(hasFocus); }
 
 	@Override protected void onDestroy()
 	{

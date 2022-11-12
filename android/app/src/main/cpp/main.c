@@ -59,7 +59,6 @@ static ovrJava engine_get_ovrJava() {
 	return java;
 }
 
-void bqPause(int p);
 int main(int argc, char* argv[]) {
 	ovrJava java = engine_get_ovrJava();
 	engine_t* engine = NULL;
@@ -86,11 +85,11 @@ int main(int argc, char* argv[]) {
 	while (1) {
 		if (hasFocus != g_HasFocus) {
 			hasFocus = g_HasFocus;
-			if (!hasFocus && !paused) {
-				bqPause(1);;
+			if (!hasFocus && VR_isPauseable()) {
+				Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_ESCAPE, qtrue, 0, NULL );
 				paused = qtrue;
 			} else if (hasFocus && paused) {
-				bqPause(0);
+				Com_QueueEvent( Sys_Milliseconds(), SE_KEY, K_ESCAPE, qtrue, 0, NULL );
 				paused = qfalse;
 			}
 		}

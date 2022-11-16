@@ -25,6 +25,7 @@ extern cvar_t *vr_heightAdjust;
 XrView* projections;
 qboolean needRecenter = qtrue;
 qboolean stageSupported = qfalse;
+qboolean wasFlat = qfalse;
 
 void VR_UpdateStageBounds(ovrApp* pappState) {
     XrExtent2Df stageBounds = {};
@@ -417,6 +418,10 @@ void VR_DrawFrame( engine_t* engine ) {
     XrCompositionLayerProjectionView projection_layer_elements[2] = {};
     if (!VR_useScreenLayer() && !(cl.snap.ps.pm_flags & PMF_FOLLOW && vr.follow_mode == VRFM_FIRSTPERSON)) {
         vr.menuYaw = vr.hmdorientation[YAW];
+		if (wasFlat) {
+			VR_ReInitRenderer();
+			wasFlat = qfalse;
+		}
 
         for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
             ovrFramebuffer* frameBuffer = &engine->appState.Renderer.FrameBuffer;
@@ -474,6 +479,7 @@ void VR_DrawFrame( engine_t* engine ) {
         cylinder_layer.aspectRatio = width / (float)height / 0.75f;
 
         engine->appState.Layers[engine->appState.LayerCount++].Cylinder = cylinder_layer;
+	    wasFlat = qtrue;
     }
 
     // Compose the layers for this frame.

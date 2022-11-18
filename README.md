@@ -1,4 +1,4 @@
-# Quake 3 Port to Pico Neo 3
+# Quake 3 Port to Pico Neo 3 and Pico 4
 
 ## Building
 

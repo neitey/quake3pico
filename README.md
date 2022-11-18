@@ -1,4 +1,4 @@
-# Quake 3 Port to Pico Neo 3 and Pico 4
+# Quake 3 VR port to Pico Neo 3 and Pico 4
 
 ## Building
 

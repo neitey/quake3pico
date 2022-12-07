@@ -5,8 +5,6 @@
 ### Prerequisites
 1. Install your copy of Quake III Arena from Steam.
 2. Android Studio with NDK version 21.1.6352462.
-3. Download the Pico OpenXR SDK from https://developer.pico-interactive.com/sdk/index?device_id=1&platform_id=3
-4. Extract the OpenXR folder to ./android/app/src/main/cpp/code/OpenXR/
 
 ### Building and running the build
 The scripts assume that you installed everything in the default locations. In case you want to deviate from that, the paths are in ./android/run.(sh|bat) and in Makefile.local.

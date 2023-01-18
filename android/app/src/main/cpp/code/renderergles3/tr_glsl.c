@@ -663,23 +663,6 @@ static int GLSL_InitGPUShader2(shaderProgram_t * program, const char *name, int 
 
 	if(fpCode)
 	{
-		//convert gamma color space to linear color space
-		int lastEnd = 0;
-		for (int i = 0; i < strlen(fpCode); i++) {
-			if (fpCode[i] == '}') {
-				lastEnd = i;
-			}
-		}
-		char* patch =   "  float coef = 2.0; //correct would be 2.2 but it was too dark\n"\
-						"  gl_FragColor.r = pow(gl_FragColor.r, coef);\n"\
-						"  gl_FragColor.g = pow(gl_FragColor.g, coef);\n"\
-						"  gl_FragColor.b = pow(gl_FragColor.b, coef);\n"\
-						"}\000";
-		for (int i = 0; i < strlen(patch); i++) {
-			fpCode[lastEnd + i] = patch[i];
-		}
-
-		//compile fragment shader
 		if(!(GLSL_CompileGPUShader(program->program, &program->fragmentShader, fpCode, strlen(fpCode), GL_FRAGMENT_SHADER)))
 		{
 			ri.Printf(PRINT_ALL, "GLSL_InitGPUShader2: Unable to load \"%s\" as GL_FRAGMENT_SHADER\n", name);

@@ -277,7 +277,7 @@ void VR_ClearFrameBuffer( int width, int height)
     if (Cvar_VariableIntegerValue("vr_thirdPersonSpectator"))
     {
         //Blood red.. ish
-        glClearColor( 0.03f, 0.0f, 0.01f, 1.0f );
+        glClearColor( 0.12f, 0.0f, 0.05f, 1.0f );
     }
     else
     {
@@ -290,6 +290,10 @@ void VR_ClearFrameBuffer( int width, int height)
 
     glScissor( 0, 0, 0, 0 );
     glDisable( GL_SCISSOR_TEST );
+
+    //This is a bit of a hack, but we need to do this to correct for the fact that the engine uses linear RGB colorspace
+    //but openxr uses SRGB (or something, must admit I don't really understand, but adding this works to make it look good again)
+    glDisable( GL_FRAMEBUFFER_SRGB );
 }
 
 void VR_DrawFrame( engine_t* engine ) {
@@ -330,9 +334,6 @@ void VR_DrawFrame( engine_t* engine ) {
 
     OXR(xrWaitFrame(engine->appState.Session, &waitFrameInfo, &frameState));
     engine->predictedDisplayTime = frameState.predictedDisplayTime;
-    if (!frameState.shouldRender) {
-        return;
-    }
 
     // Get the HMD pose, predicted for the middle of the time period during which
     // the new eye images will be displayed. The number of frames predicted ahead

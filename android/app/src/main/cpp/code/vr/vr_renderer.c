@@ -19,6 +19,8 @@
 #include <GLES3/gl32.h>
 #endif
 
+#define DEFAULT_SUPER_SAMPLING  1.1f
+
 extern vr_clientinfo_t vr;
 extern cvar_t *vr_heightAdjust;
 
@@ -79,7 +81,22 @@ void VR_GetResolution(engine_t* engine, int *pWidth, int *pHeight)
 {
 	static int width = 0;
 	static int height = 0;
-	
+	float superSampling = 0.0f;
+
+	float configuredSuperSampling = Cvar_VariableValue("vr_superSampling");
+	if (vr.superSampling == 0.0f || configuredSuperSampling != vr.superSampling) {
+		vr.superSampling = configuredSuperSampling;
+		if (vr.superSampling != 0.0f) {
+			Cbuf_AddText( "vid_restart\n" );
+		}
+	}
+
+	if (vr.superSampling == 0.0f) {
+		superSampling = DEFAULT_SUPER_SAMPLING;
+	} else {
+		superSampling = vr.superSampling;
+	}
+
 	if (engine)
 	{
         // Enumerate the viewport configurations.
@@ -153,8 +170,8 @@ void VR_GetResolution(engine_t* engine, int *pWidth, int *pHeight)
 
         free(viewportConfigurationTypes);
 
-        *pWidth = width = engine->appState.ViewConfigurationView[0].recommendedImageRectWidth;
-        *pHeight = height = engine->appState.ViewConfigurationView[0].recommendedImageRectHeight;
+        *pWidth = width = engine->appState.ViewConfigurationView[0].recommendedImageRectWidth * superSampling;
+        *pHeight = height = engine->appState.ViewConfigurationView[0].recommendedImageRectHeight * superSampling;
 	}
 	else
 	{
@@ -253,8 +270,8 @@ void VR_InitRenderer( engine_t* engine ) {
     ovrRenderer_Create(
             engine->appState.Session,
             &engine->appState.Renderer,
-            engine->appState.ViewConfigurationView[0].recommendedImageRectWidth,
-            engine->appState.ViewConfigurationView[0].recommendedImageRectHeight);
+            eyeW,
+            eyeH);
 }
 
 void VR_DestroyRenderer( engine_t* engine )

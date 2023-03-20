@@ -57,8 +57,6 @@ public class SDLActivity extends Activity {
     // Main components
     protected static SDLActivity mSingleton;
     protected static SDLSurface mSurface;
-    protected static View mTextEdit;
-    protected static boolean mScreenKeyboardShown;
     protected static ViewGroup mLayout;
     protected static SDLClipboardHandler mClipboardHandler;
 
@@ -130,7 +128,6 @@ public class SDLActivity extends Activity {
         // Otherwise, when exiting the app and returning to it, these variables *keep* their pre exit values
         mSingleton = null;
         mSurface = null;
-        mTextEdit = null;
         mLayout = null;
         mClipboardHandler = null;
         mSDLThread = null;
@@ -396,8 +393,6 @@ public class SDLActivity extends Activity {
 
     // Messages from the SDLMain thread
     static final int COMMAND_CHANGE_TITLE = 1;
-    static final int COMMAND_CHANGE_WINDOW_STYLE = 2;
-    static final int COMMAND_TEXTEDIT_HIDE = 3;
     static final int COMMAND_SET_KEEP_SCREEN_ON = 5;
 
     protected static final int COMMAND_USER = 0x8000;
@@ -433,49 +428,6 @@ public class SDLActivity extends Activity {
                     ((Activity) context).setTitle((String)msg.obj);
                 } else {
                     Log.e(TAG, "error handling message, getContext() returned no Activity");
-                }
-                break;
-            case COMMAND_CHANGE_WINDOW_STYLE:
-                if (Build.VERSION.SDK_INT < 19) {
-                    // This version of Android doesn't support the immersive fullscreen mode
-                    break;
-                }
-/* This needs more testing, per bug 4096 - Enabling fullscreen on Android causes the app to toggle fullscreen mode continuously in a loop
- ***
-                if (context instanceof Activity) {
-                    Window window = ((Activity) context).getWindow();
-                    if (window != null) {
-                        if ((msg.obj instanceof Integer) && (((Integer) msg.obj).intValue() != 0)) {
-                            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                                        View.SYSTEM_UI_FLAG_FULLSCREEN |
-                                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-                            window.getDecorView().setSystemUiVisibility(flags);        
-                            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                        } else {
-                            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-                            window.getDecorView().setSystemUiVisibility(flags);        
-                            window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                        }
-                    }
-                } else {
-                    Log.e(TAG, "error handling message, getContext() returned no Activity");
-                }
-***/
-                break;
-            case COMMAND_TEXTEDIT_HIDE:
-                if (mTextEdit != null) {
-                    // Note: On some devices setting view to GONE creates a flicker in landscape.
-                    // Setting the View's sizes to 0 is similar to GONE but without the flicker.
-                    // The sizes will be set to useful values when the keyboard is shown again.
-                    mTextEdit.setLayoutParams(new RelativeLayout.LayoutParams(0, 0));
-
-                    InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(mTextEdit.getWindowToken(), 0);
-                    
-                    mScreenKeyboardShown = false;
                 }
                 break;
             case COMMAND_SET_KEEP_SCREEN_ON:
@@ -546,8 +498,7 @@ public class SDLActivity extends Activity {
      * This method is called by SDL using JNI.
      */
     public static void setWindowStyle(boolean fullscreen) {
-        // Called from SDLMain() thread and can't directly affect the view
-        mSingleton.sendCommand(COMMAND_CHANGE_WINDOW_STYLE, fullscreen ? 1 : 0);
+        //UNSUPPORTED
     }
 
     /**
@@ -608,16 +559,8 @@ public class SDLActivity extends Activity {
      */
     public static boolean isScreenKeyboardShown() 
     {
-        if (mTextEdit == null) {
-            return false;
-        }
-
-        if (!mScreenKeyboardShown) {
-            return false;
-        }
-
-        InputMethodManager imm = (InputMethodManager) SDL.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-        return imm.isAcceptingText();
+        //UNSUPPORTED
+        return false;
 
     }
 
@@ -680,53 +623,12 @@ public class SDLActivity extends Activity {
         return false;
     }
 
-    static class ShowTextInputTask implements Runnable {
-        /*
-         * This is used to regulate the pan&scan method to have some offset from
-         * the bottom edge of the input region and the top edge of an input
-         * method (soft keyboard)
-         */
-        static final int HEIGHT_PADDING = 15;
-
-        public int x, y, w, h;
-
-        public ShowTextInputTask(int x, int y, int w, int h) {
-            this.x = x;
-            this.y = y;
-            this.w = w;
-            this.h = h;
-        }
-
-        @Override
-        public void run() {
-            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(w, h + HEIGHT_PADDING);
-            params.leftMargin = x;
-            params.topMargin = y;
-
-            if (mTextEdit == null) {
-                mTextEdit = new DummyEdit(SDL.getContext());
-
-                mLayout.addView(mTextEdit, params);
-            } else {
-                mTextEdit.setLayoutParams(params);
-            }
-
-            mTextEdit.setVisibility(View.VISIBLE);
-            mTextEdit.requestFocus();
-
-            InputMethodManager imm = (InputMethodManager) SDL.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.showSoftInput(mTextEdit, 0);
-
-            mScreenKeyboardShown = true;
-        }
-    }
-
     /**
      * This method is called by SDL using JNI.
      */
     public static boolean showTextInput(int x, int y, int w, int h) {
-        // Transfer the task to the main thread as a Runnable
-        return mSingleton.commandHandler.post(new ShowTextInputTask(x, y, w, h));
+        //UNSUPPORTED
+        return false;
     }
 
     public static boolean isTextInputEvent(KeyEvent event) {
@@ -1495,23 +1397,6 @@ class DummyEdit extends View implements View.OnKeyListener {
         return false;
     }
 
-    //
-    @Override
-    public boolean onKeyPreIme (int keyCode, KeyEvent event) {
-        // As seen on StackOverflow: http://stackoverflow.com/questions/7634346/keyboard-hide-event
-        // FIXME: Discussion at http://bugzilla.libsdl.org/show_bug.cgi?id=1639
-        // FIXME: This is not a 100% effective solution to the problem of detecting if the keyboard is showing or not
-        // FIXME: A more effective solution would be to assume our Layout to be RelativeLayout or LinearLayout
-        // FIXME: And determine the keyboard presence doing this: http://stackoverflow.com/questions/2150078/how-to-check-visibility-of-software-keyboard-in-android
-        // FIXME: An even more effective way would be if Android provided this out of the box, but where would the fun be in that :)
-        if (event.getAction()==KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_BACK) {
-            if (SDLActivity.mTextEdit != null && SDLActivity.mTextEdit.getVisibility() == View.VISIBLE) {
-                SDLActivity.onNativeKeyboardFocusLost();
-            }
-        }
-        return super.onKeyPreIme(keyCode, event);
-    }
-
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
         ic = new SDLInputConnection(this, true);
@@ -1529,36 +1414,6 @@ class SDLInputConnection extends BaseInputConnection {
     public SDLInputConnection(View targetView, boolean fullEditor) {
         super(targetView, fullEditor);
 
-    }
-
-    @Override
-    public boolean sendKeyEvent(KeyEvent event) {
-        /*
-         * This used to handle the keycodes from soft keyboard (and IME-translated input from hardkeyboard)
-         * However, as of Ice Cream Sandwich and later, almost all soft keyboard doesn't generate key presses
-         * and so we need to generate them ourselves in commitText.  To avoid duplicates on the handful of keys
-         * that still do, we empty this out.
-         */
-
-        /*
-         * Return DOES still generate a key event, however.  So rather than using it as the 'click a button' key
-         * as we do with physical keyboards, let's just use it to hide the keyboard.
-         */
-
-        if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
-            String imeHide = SDLActivity.nativeGetHint("SDL_RETURN_KEY_HIDES_IME");
-            if ((imeHide != null) && imeHide.equals("1")) {
-                Context c = SDL.getContext();
-                if (c instanceof SDLActivity) {
-                    SDLActivity activity = (SDLActivity)c;
-                    activity.sendCommand(SDLActivity.COMMAND_TEXTEDIT_HIDE, null);
-                    return true;
-                }
-            }
-        }
-
-
-        return super.sendKeyEvent(event);
     }
 
     @Override

@@ -9,6 +9,25 @@
 #include <assert.h>
 #include <unistd.h>
 
+#ifdef _DEBUG
+void GLCheckErrors(const char* file, int line) {
+    for (int i = 0; i < 10; i++) {
+        const GLenum error = glGetError();
+        if (error == GL_NO_ERROR) {
+            break;
+        }
+        ALOGV("OpenGL error: %s: %d ERROR %d\n", file, line, error);
+    }
+}
+void OXRCheckErrors(XrResult result, const char* function) {
+    if (XR_FAILED(result)) {
+        char errorBuffer[XR_MAX_RESULT_STRING_SIZE];
+        xrResultToString(VR_GetEngine()->appState.Instance, result, errorBuffer);
+        ALOGV("OpenXR error: %s: %s\n", function, errorBuffer);
+    }
+}
+#endif
+
 static engine_t vr_engine;
 qboolean vr_initialized = qfalse;
 extern vr_clientinfo_t vr;

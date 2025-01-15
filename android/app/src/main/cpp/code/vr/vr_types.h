@@ -23,8 +23,9 @@
 
 #define MATH_PI 3.14159265358979323846f
 
-#define ALOGE(...) printf(__VA_ARGS__)
-#define ALOGV(...) printf(__VA_ARGS__)
+#include <android/log.h>
+#define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, "OpenXR", __VA_ARGS__);
+#define ALOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, "OpenXR", __VA_ARGS__);
 
 typedef union {
     XrCompositionLayerProjection Projection;
@@ -33,9 +34,6 @@ typedef union {
 
 enum { ovrMaxLayerCount = 1 };
 enum { ovrMaxNumEyes = 2 };
-
-#define GL(func) func;
-#define OXR(func) func;
 
 typedef struct {
 	JavaVM* Vm;

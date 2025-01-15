@@ -3,6 +3,8 @@
 
 #if __ANDROID__
 
+#define _DEBUG
+
 #include "vr_types.h"
 
 engine_t* VR_Init( ovrJava java );
@@ -20,6 +22,16 @@ float radians(float deg);
 
 void VR_HapticEvent(const char* event, int position, int flags, int intensity, float angle, float yHeight );
 
+#endif
+
+#if defined(_DEBUG)
+void GLCheckErrors(const char* file, int line);
+void OXRCheckErrors(XrResult result, const char* function);
+#define GL(func) func; GLCheckErrors(__FILE__ , __LINE__);
+#define OXR(func) OXRCheckErrors(func, #func);
+#else
+#define GL(func) func;
+#define OXR(func) func;
 #endif
 
 #endif

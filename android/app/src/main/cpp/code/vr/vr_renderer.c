@@ -266,6 +266,10 @@ void VR_InitRenderer( engine_t* engine ) {
     }
 
     projections = (XrView*)(malloc(ovrMaxNumEyes * sizeof(XrView)));
+    for (int eye = 0; eye < ovrMaxNumEyes; eye++) {
+        memset(&projections[eye], 0, sizeof(XrView));
+        projections[eye].type = XR_TYPE_VIEW;
+    }
 
     ovrRenderer_Create(
             engine->appState.Session,
@@ -352,15 +356,6 @@ void VR_DrawFrame( engine_t* engine ) {
     OXR(xrWaitFrame(engine->appState.Session, &waitFrameInfo, &frameState));
     engine->predictedDisplayTime = frameState.predictedDisplayTime;
 
-    // Get the HMD pose, predicted for the middle of the time period during which
-    // the new eye images will be displayed. The number of frames predicted ahead
-    // depends on the pipeline depth of the engine and the synthesis rate.
-    // The better the prediction, the less black will be pulled in at the edges.
-    XrFrameBeginInfo beginFrameDesc = {};
-    beginFrameDesc.type = XR_TYPE_FRAME_BEGIN_INFO;
-    beginFrameDesc.next = NULL;
-    OXR(xrBeginFrame(engine->appState.Session, &beginFrameDesc));
-
     XrViewLocateInfo projectionInfo = {};
     projectionInfo.type = XR_TYPE_VIEW_LOCATE_INFO;
     projectionInfo.viewConfigurationType = engine->appState.ViewportConfig.viewConfigurationType;
@@ -379,7 +374,15 @@ void VR_DrawFrame( engine_t* engine ) {
             projectionCapacityInput,
             &projectionCountOutput,
             projections));
-    //
+
+    // Get the HMD pose, predicted for the middle of the time period during which
+    // the new eye images will be displayed. The number of frames predicted ahead
+    // depends on the pipeline depth of the engine and the synthesis rate.
+    // The better the prediction, the less black will be pulled in at the edges.
+    XrFrameBeginInfo beginFrameDesc = {};
+    beginFrameDesc.type = XR_TYPE_FRAME_BEGIN_INFO;
+    beginFrameDesc.next = NULL;
+    OXR(xrBeginFrame(engine->appState.Session, &beginFrameDesc));
 
     XrFovf fov = {};
     XrPosef invViewTransform[2];
